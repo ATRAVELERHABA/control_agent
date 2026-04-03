@@ -1,0 +1,42 @@
+/*
+  全局样式入口文件。
+  这里主要做三件事：
+  1. 注入 Tailwind 的基础样式层
+  2. 定义整个应用的全局背景与字体
+  3. 做一些最基础的元素重置，保证页面在桌面端显示更稳定
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #f8fafc;
+  background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.24), transparent 45%),
+    linear-gradient(160deg, #020617 0%, #0f172a 55%, #111827 100%);
+  font-family:
+    "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 统一盒模型，避免内边距和边框导致的尺寸计算不一致。 */
+* {
+  box-sizing: border-box;
+}
+
+/* 给页面设置最小宽高，保证桌面窗口缩小时布局不至于完全塌陷。 */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* 让表单控件继承页面字体，避免输入框和按钮字体风格不统一。 */
+button,
+input {
+  font: inherit;
+}
+
+/* 根节点撑满窗口高度，方便主容器使用 flex 居中。 */
+#root {
+  min-height: 100vh;
+}

@@ -1,0 +1,25 @@
+# Rust / Tauri 后端依赖配置文件。
+# 这里声明桌面端应用的元信息，以及运行后端逻辑所需的依赖。
+[package]
+name = "ai-universal-assistant"
+version = "0.1.0"
+description = "Cross-platform AI desktop assistant built with Tauri"
+authors = ["86153"]
+edition = "2021"
+
+[lib]
+name = "ai_universal_assistant_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+base64 = "0.22"
+dotenvy = "0.15"
+encoding_rs = "0.8"
+futures-util = "0.3"
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
