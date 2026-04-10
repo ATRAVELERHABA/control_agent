@@ -1,0 +1,29 @@
+{
+  "id": "duckduckgo-search",
+  "name": "DuckDuckGo 搜索",
+  "description": "允许模型通过 DuckDuckGo 进行联网搜索，获取公开网页结果、标题、链接与摘要。",
+  "type": "tool",
+  "enabled": true,
+  "tool": {
+    "name": "duckduckgo_search",
+    "description": "使用 DuckDuckGo 搜索公开网页内容。适用于需要查找最新资料、新闻、文档或参考链接的场景。",
+    "requires_confirmation": false,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "需要搜索的关键词、问题或短语。"
+        },
+        "maxResults": {
+          "type": "integer",
+          "description": "最多返回多少条结果，范围 1 到 10，默认 5。",
+          "minimum": 1,
+          "maximum": 10
+        }
+      },
+      "required": ["query"],
+      "additionalProperties": false
+    }
+  }
+}

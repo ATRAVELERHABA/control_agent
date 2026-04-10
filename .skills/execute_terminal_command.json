@@ -1,0 +1,23 @@
+{
+  "id": "execute-terminal-command",
+  "name": "终端命令执行",
+  "description": "允许模型请求在用户当前操作系统终端执行命令。",
+  "type": "tool",
+  "enabled": true,
+  "tool": {
+    "name": "execute_terminal_command",
+    "description": "在用户的操作系统终端执行自定义指令",
+    "requires_confirmation": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "需要在用户本地终端执行的完整命令字符串"
+        }
+      },
+      "required": ["command"],
+      "additionalProperties": false
+    }
+  }
+}

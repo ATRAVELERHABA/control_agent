@@ -1,0 +1,8 @@
+{
+  "id": "safe-terminal-gateway",
+  "name": "安全终端网关",
+  "description": "提醒模型终端能力受前端确认控制，避免无必要命令调用。",
+  "type": "prompt",
+  "enabled": true,
+  "instruction": "在需要读取环境、验证系统信息、执行安装命令或运行脚本时才调用 execute_terminal_command。调用前尽量先说明目的。所有终端命令都需要用户在前端确认，禁止假设命令已经执行。"
+}

@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .vite/
+.venv/
+control_agent/.venv/
 
 src-tauri/target/
 src-tauri/gen/
