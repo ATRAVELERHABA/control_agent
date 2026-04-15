@@ -18,6 +18,16 @@ pub(crate) const AUDIO_TRANSCRIBE_SCRIPT_RELATIVE_PATH: &str =
 pub(crate) const TOOL_NAME: &str = "execute_terminal_command";
 
 /// 阿里云 DashScope 兼容接口的默认基地址。
+pub(crate) const LICENSE_PRODUCT_ID: &str = "com.aiuniversalassistant.app";
+pub(crate) const LICENSE_SCHEMA_VERSION: u32 = 1;
+pub(crate) const DEFAULT_LICENSE_PUBLIC_KEY: &str =
+    "vZ-2JTrA6D0a5uFfmF74cNe0MBw4No8F_BIYe09GG_E";
+pub(crate) const LICENSE_PUBLIC_KEY_ENV_NAME: &str = "LICENSE_PUBLIC_KEY";
+pub(crate) const LICENSE_STATE_FILE_NAME: &str = "activation-state.json";
+pub(crate) const LICENSE_COPY_FILE_NAME: &str = "license.json";
+pub(crate) const AUTH_DIR_NAME: &str = "auth";
+pub(crate) const ACCOUNT_STORE_FILE_NAME: &str = "accounts.json";
+pub(crate) const SESSION_STATE_FILE_NAME: &str = "session.json";
 pub(crate) const ALIYUN_DASHSCOPE_BASE_URL: &str =
     "https://dashscope.aliyuncs.com/compatible-mode/v1";
 

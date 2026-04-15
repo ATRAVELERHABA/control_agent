@@ -1,0 +1,967 @@
+{
+  "meta": {
+    "url": "https://rive.app/login/?redirect=https%3A%2F%2Feditor.rive.app",
+    "title": "Rive - Login",
+    "capturedAt": "2026-04-13T08:18:57.710Z",
+    "viewportSamples": {
+      "desktop": "1440x900",
+      "mobile": "390x844"
+    },
+    "pageType": "web-page",
+    "locale": "zh-CN"
+  },
+  "summary": {
+    "visualStyle": [
+      "custom-surface",
+      "structured"
+    ],
+    "primaryLayout": "footer",
+    "notes": "web-page captured from a live page with 53 visible reference nodes."
+  },
+  "designTokens": {
+    "colors": {
+      "background": "#303030",
+      "surface": "#111111",
+      "textPrimary": "#000000",
+      "textSecondary": "#999999",
+      "border": "#FFFFFF",
+      "accent": "#0000EE",
+      "palette": [
+        {
+          "value": "#FFFFFF",
+          "count": 12
+        },
+        {
+          "value": "#AAAAAA",
+          "count": 6
+        },
+        {
+          "value": "#0000EE",
+          "count": 6
+        },
+        {
+          "value": "#000000",
+          "count": 4
+        },
+        {
+          "value": "#111111",
+          "count": 2
+        },
+        {
+          "value": "#999999",
+          "count": 2
+        },
+        {
+          "value": "#303030",
+          "count": 1
+        },
+        {
+          "value": "#1B1B1B",
+          "count": 1
+        }
+      ],
+      "customProperties": {
+        "--color-field": "#1d1d1d",
+        "--color-amber": "#f6c566",
+        "--color-green": "#4cbe9c",
+        "--color-text-light": "#f1f1f1",
+        "--color-divider": "#323232",
+        "--color-blue": "#33a7ff",
+        "--color-text-default": "#888888",
+        "--color-text-value": "#cccccc",
+        "--color-red": "#ff3b58",
+        "--color-text-disabled": "#444444",
+        "--framer-aspect-ratio-supported": "auto"
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "base": "Inter, \"Inter Placeholder\", sans-serif",
+        "heading": "Inter, \"Inter Placeholder\", sans-serif",
+        "mono": ""
+      },
+      "fontSizes": {
+        "scale": [
+          "16px"
+        ],
+        "xs": "16px"
+      },
+      "fontWeights": {
+        "scale": [
+          "400",
+          "500"
+        ],
+        "regular": "400",
+        "medium": "500"
+      },
+      "lineHeights": {
+        "scale": [
+          "1.2"
+        ],
+        "tight": "1.2"
+      },
+      "letterSpacings": {
+        "scale": [
+          "normal"
+        ],
+        "tight": "normal"
+      }
+    },
+    "spacing": {
+      "scale": [
+        "100px",
+        "60px",
+        "20px",
+        "40px",
+        "10px"
+      ],
+      "sectionGap": "100px",
+      "containerPaddingX": "0px",
+      "cardPadding": "100px"
+    },
+    "radius": {
+      "scale": [
+        "50%"
+      ],
+      "sm": "50%"
+    },
+    "shadow": {
+      "card": "",
+      "overlay": "",
+      "scale": []
+    },
+    "border": {
+      "default": "",
+      "strong": ""
+    },
+    "motion": {
+      "durations": [],
+      "easings": [
+        "ease"
+      ]
+    },
+    "breakpoints": {
+      "sampled": {
+        "desktop": "1440px",
+        "mobile": "390px"
+      },
+      "detected": [
+        "800px",
+        "600px",
+        "960px",
+        "768px",
+        "1024px"
+      ]
+    }
+  },
+  "layout": {
+    "page": {
+      "structure": [],
+      "maxWidth": "1440px",
+      "scrollDirection": "vertical"
+    },
+    "containers": []
+  },
+  "components": [
+    {
+      "id": "cmp_container",
+      "sourcePath": "body[1]>div[1]>div[1]",
+      "name": "Container",
+      "role": "stack",
+      "semanticTag": "div",
+      "purpose": "stack",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 1260
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "column",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "#1B1B1B",
+        "textColor": "#AAAAAA",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #AAAAAA",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container2"
+      ]
+    },
+    {
+      "id": "cmp_container2",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]",
+      "name": "Container2",
+      "role": "stack",
+      "semanticTag": "div",
+      "purpose": "stack",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 1260
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#AAAAAA",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #AAAAAA",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container3"
+      ]
+    },
+    {
+      "id": "cmp_container3",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[1]",
+      "name": "Container3",
+      "role": "stack",
+      "semanticTag": "div",
+      "purpose": "stack",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 1260
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "column",
+        "justifyContent": "center",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "#FFFFFF",
+        "textColor": "#AAAAAA",
+        "padding": "100px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #AAAAAA",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container5"
+      ]
+    },
+    {
+      "id": "cmp_container4",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[1]>div[1]>div[2]>div[1]",
+      "name": "Container4",
+      "role": "stack",
+      "semanticTag": "div",
+      "purpose": "stack",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "column",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "#1D1D1D",
+        "textColor": "#AAAAAA",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #AAAAAA",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_container5",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[1]>div[1]",
+      "name": "Container5",
+      "role": "stack",
+      "semanticTag": "div",
+      "purpose": "stack",
+      "text": "",
+      "boundingBox": {
+        "x": 100,
+        "y": 100,
+        "width": 380,
+        "height": 1060
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "column",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#AAAAAA",
+        "padding": "60px 20px 0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #AAAAAA",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "340px"
+      },
+      "children": [
+        "cmp_image",
+        "cmp_container4"
+      ]
+    },
+    {
+      "id": "cmp_image",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[1]>div[1]>div[1]>img[1]",
+      "name": "Image",
+      "role": "image",
+      "semanticTag": "img",
+      "purpose": "image",
+      "text": "",
+      "boundingBox": {
+        "x": 120,
+        "y": 160,
+        "width": 220,
+        "height": 40
+      },
+      "layout": {
+        "display": "inline",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#AAAAAA",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #AAAAAA",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_sidebar-footer",
+      "sourcePath": "body[1]>div[1]>div[2]>div[1]>svg[1]",
+      "name": "SidebarFooter",
+      "role": "icon",
+      "semanticTag": "svg",
+      "purpose": "icon",
+      "text": "",
+      "boundingBox": {
+        "x": 220,
+        "y": 1320,
+        "width": 220,
+        "height": 40
+      },
+      "layout": {
+        "display": "inline",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#000000",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #000000",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_text-link",
+      "sourcePath": "body[1]>div[1]>div[3]>footer[1]>div[1]>div[2]>a[1]",
+      "name": "TextLink",
+      "role": "link",
+      "semanticTag": "a",
+      "purpose": "link",
+      "text": "",
+      "boundingBox": {
+        "x": 1050,
+        "y": 1420,
+        "width": 20,
+        "height": 20
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "row",
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "10px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#0000EE",
+        "padding": "0px",
+        "gap": "10px",
+        "borderRadius": "0px",
+        "border": "0px none #0000EE",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_text-link2",
+      "sourcePath": "body[1]>div[1]>div[3]>footer[1]>div[1]>div[2]>a[2]",
+      "name": "TextLink2",
+      "role": "link",
+      "semanticTag": "a",
+      "purpose": "link",
+      "text": "",
+      "boundingBox": {
+        "x": 1080,
+        "y": 1420,
+        "width": 20,
+        "height": 20
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "row",
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "10px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#0000EE",
+        "padding": "0px",
+        "gap": "10px",
+        "borderRadius": "0px",
+        "border": "0px none #0000EE",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_text-link3",
+      "sourcePath": "body[1]>div[1]>div[3]>footer[1]>div[1]>div[2]>a[3]",
+      "name": "TextLink3",
+      "role": "link",
+      "semanticTag": "a",
+      "purpose": "link",
+      "text": "",
+      "boundingBox": {
+        "x": 1110,
+        "y": 1420,
+        "width": 20,
+        "height": 20
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "row",
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "10px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#0000EE",
+        "padding": "0px",
+        "gap": "10px",
+        "borderRadius": "0px",
+        "border": "0px none #0000EE",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_text-link4",
+      "sourcePath": "body[1]>div[1]>div[3]>footer[1]>div[1]>div[2]>a[4]",
+      "name": "TextLink4",
+      "role": "link",
+      "semanticTag": "a",
+      "purpose": "link",
+      "text": "",
+      "boundingBox": {
+        "x": 1140,
+        "y": 1420,
+        "width": 20,
+        "height": 20
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "row",
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "10px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#0000EE",
+        "padding": "0px",
+        "gap": "10px",
+        "borderRadius": "0px",
+        "border": "0px none #0000EE",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_text-link5",
+      "sourcePath": "body[1]>div[1]>div[3]>footer[1]>div[1]>div[2]>a[5]",
+      "name": "TextLink5",
+      "role": "link",
+      "semanticTag": "a",
+      "purpose": "link",
+      "text": "",
+      "boundingBox": {
+        "x": 1170,
+        "y": 1420,
+        "width": 20,
+        "height": 20
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "row",
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "10px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#0000EE",
+        "padding": "0px",
+        "gap": "10px",
+        "borderRadius": "0px",
+        "border": "0px none #0000EE",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_text-link6",
+      "sourcePath": "body[1]>div[1]>div[3]>footer[1]>div[1]>div[2]>a[6]",
+      "name": "TextLink6",
+      "role": "link",
+      "semanticTag": "a",
+      "purpose": "link",
+      "text": "",
+      "boundingBox": {
+        "x": 1200,
+        "y": 1420,
+        "width": 20,
+        "height": 20
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "row",
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "10px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#0000EE",
+        "padding": "0px",
+        "gap": "10px",
+        "borderRadius": "0px",
+        "border": "0px none #0000EE",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_sidebar-footer2",
+      "sourcePath": "body[1]>div[1]>div[3]>footer[1]>div[1]>div[1]>div[3]>p[1]>a[1]",
+      "name": "SidebarFooter2",
+      "role": "link",
+      "semanticTag": "a",
+      "purpose": "Terms of Service",
+      "text": "Terms of Service",
+      "boundingBox": {
+        "x": 220,
+        "y": 1496.6,
+        "width": 130.1,
+        "height": 20
+      },
+      "layout": {
+        "display": "inline",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#999999",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #999999",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_sidebar-footer3",
+      "sourcePath": "body[1]>div[1]>div[3]>footer[1]>div[1]>div[1]>div[4]>p[1]>a[1]",
+      "name": "SidebarFooter3",
+      "role": "link",
+      "semanticTag": "a",
+      "purpose": "Privacy Policy",
+      "text": "Privacy Policy",
+      "boundingBox": {
+        "x": 220,
+        "y": 1525.8,
+        "width": 107.2,
+        "height": 20
+      },
+      "layout": {
+        "display": "inline",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#999999",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px none #999999",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    }
+  ],
+  "componentTree": {
+    "root": "page_root",
+    "nodes": [
+      {
+        "id": "page_root",
+        "name": "PageRoot",
+        "children": [
+          "cmp_container",
+          "cmp_sidebar-footer",
+          "cmp_text-link",
+          "cmp_text-link2",
+          "cmp_text-link3",
+          "cmp_text-link4",
+          "cmp_text-link5",
+          "cmp_text-link6",
+          "cmp_sidebar-footer2",
+          "cmp_sidebar-footer3"
+        ]
+      },
+      {
+        "id": "cmp_container",
+        "name": "Container",
+        "children": [
+          "cmp_container2"
+        ]
+      },
+      {
+        "id": "cmp_container2",
+        "name": "Container2",
+        "children": [
+          "cmp_container3"
+        ]
+      },
+      {
+        "id": "cmp_container3",
+        "name": "Container3",
+        "children": [
+          "cmp_container5"
+        ]
+      },
+      {
+        "id": "cmp_container4",
+        "name": "Container4",
+        "children": []
+      },
+      {
+        "id": "cmp_container5",
+        "name": "Container5",
+        "children": [
+          "cmp_image",
+          "cmp_container4"
+        ]
+      },
+      {
+        "id": "cmp_image",
+        "name": "Image",
+        "children": []
+      },
+      {
+        "id": "cmp_sidebar-footer",
+        "name": "SidebarFooter",
+        "children": []
+      },
+      {
+        "id": "cmp_text-link",
+        "name": "TextLink",
+        "children": []
+      },
+      {
+        "id": "cmp_text-link2",
+        "name": "TextLink2",
+        "children": []
+      },
+      {
+        "id": "cmp_text-link3",
+        "name": "TextLink3",
+        "children": []
+      },
+      {
+        "id": "cmp_text-link4",
+        "name": "TextLink4",
+        "children": []
+      },
+      {
+        "id": "cmp_text-link5",
+        "name": "TextLink5",
+        "children": []
+      },
+      {
+        "id": "cmp_text-link6",
+        "name": "TextLink6",
+        "children": []
+      },
+      {
+        "id": "cmp_sidebar-footer2",
+        "name": "SidebarFooter2",
+        "children": []
+      },
+      {
+        "id": "cmp_sidebar-footer3",
+        "name": "SidebarFooter3",
+        "children": []
+      }
+    ]
+  },
+  "content": {
+    "headings": [],
+    "buttons": [],
+    "links": [
+      {
+        "text": "Terms of Service",
+        "href": "https://help.rive.app/legal/terms-of-service",
+        "componentId": "cmp_sidebar-footer2"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "https://help.rive.app/legal/privacy-policy",
+        "componentId": "cmp_sidebar-footer3"
+      },
+      {
+        "text": "",
+        "href": "https://www.youtube.com/channel/UCPal2R1FxwRTPylhP_7ofEg",
+        "componentId": "cmp_text-link"
+      },
+      {
+        "text": "",
+        "href": "https://twitter.com/rive_app",
+        "componentId": "cmp_text-link2"
+      },
+      {
+        "text": "",
+        "href": "https://www.instagram.com/rive.app/",
+        "componentId": "cmp_text-link3"
+      },
+      {
+        "text": "",
+        "href": "https://github.com/rive-app",
+        "componentId": "cmp_text-link4"
+      },
+      {
+        "text": "",
+        "href": "https://dribbble.com/rive_app",
+        "componentId": "cmp_text-link5"
+      },
+      {
+        "text": "",
+        "href": "https://discord.com/invite/FGjmaTr",
+        "componentId": "cmp_text-link6"
+      }
+    ]
+  },
+  "assets": {
+    "images": [
+      {
+        "src": "https://cdn.rive.app/icons/rive_logo_black.svg",
+        "alt": "Rive",
+        "componentId": "cmp_image",
+        "fit": "fill"
+      }
+    ],
+    "icons": [
+      {
+        "label": "",
+        "componentId": "cmp_sidebar-footer"
+      }
+    ]
+  },
+  "responsive": {
+    "mediaQueries": [
+      "screen and (min-width: 800px)",
+      "screen and (min-width: 600px)",
+      "screen and (min-width: 960px)",
+      "screen and (min-width: 768px)",
+      "screen and (min-width: 1024px)"
+    ],
+    "strategies": [
+      {
+        "componentId": "cmp_container",
+        "rule": "Container compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container2",
+        "rule": "Container2 changes flex direction at mobile width"
+      },
+      {
+        "componentId": "cmp_container3",
+        "rule": "Container3 compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container4",
+        "rule": "Container4 compresses significantly at mobile width"
+      }
+    ]
+  },
+  "implementationHints": {
+    "frameworkMapping": {
+      "react": [
+        "Container",
+        "Container2",
+        "Container3",
+        "Container4",
+        "Container5",
+        "Image",
+        "SidebarFooter",
+        "TextLink",
+        "TextLink2",
+        "TextLink3",
+        "TextLink4",
+        "TextLink5",
+        "TextLink6",
+        "SidebarFooter2",
+        "SidebarFooter3"
+      ],
+      "vue": [
+        "Container",
+        "Container2",
+        "Container3",
+        "Container4",
+        "Container5",
+        "Image",
+        "SidebarFooter",
+        "TextLink",
+        "TextLink2",
+        "TextLink3",
+        "TextLink4",
+        "TextLink5",
+        "TextLink6",
+        "SidebarFooter2",
+        "SidebarFooter3"
+      ],
+      "html": [
+        "div",
+        "img",
+        "svg",
+        "a"
+      ]
+    },
+    "recommendedTokens": [
+      "--color-background",
+      "--color-surface",
+      "--color-text-primary",
+      "--color-accent",
+      "--space-1",
+      "--space-2",
+      "--radius-sm",
+      "--radius-md"
+    ],
+    "accessibilityNotes": [
+      "Add or preserve a single h1 for page-level structure."
+    ]
+  }
+}

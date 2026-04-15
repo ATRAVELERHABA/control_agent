@@ -87,6 +87,45 @@ export interface BackendModeStatuses {
   local: BackendModeStatus;
 }
 
+export interface LicenseStatus {
+  valid: boolean;
+  message: string;
+  accountEmail?: string;
+  licenseId?: string;
+  issuedAt?: string;
+  appDataDir: string;
+}
+
+export interface ImportLicenseRequest {
+  fileName: string;
+  contents: string;
+}
+
+export interface ImportLicenseResult {
+  valid: boolean;
+  status: LicenseStatus;
+}
+
+export interface SessionStatus {
+  authenticated: boolean;
+  message: string;
+  email?: string;
+}
+
+export interface CurrentUser {
+  email: string;
+}
+
+export interface RegisterAccountRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface SkillSummary {
   id: string;
   name: string;

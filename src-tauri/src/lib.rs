@@ -1,5 +1,7 @@
 //! Tauri 后端库入口。
 
+mod activation;
+mod auth;
 mod app;
 mod assets;
 mod audio;
@@ -7,6 +9,7 @@ mod command_runner;
 mod constants;
 mod env;
 mod events;
+pub mod licensing;
 mod llm;
 mod logging;
 mod models;

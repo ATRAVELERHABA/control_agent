@@ -55,11 +55,18 @@ import {
   type AssetSummary,
   type BackendModeStatuses,
   type ConversationMessage,
+  type CurrentUser,
+  type ImportLicenseRequest,
+  type ImportLicenseResult,
+  type LicenseStatus,
+  type LoginRequest,
+  type RegisterAccountRequest,
   type RegisterAssetRequest,
   type RunCommandRequest,
   type RunDuckDuckGoSearchRequest,
   type RunAgentTurnRequest,
   type RunAgentTurnResult,
+  type SessionStatus,
   type SkillSummary,
   type ToolFunctionCall,
   type TranscribeAudioRequest,
@@ -78,6 +85,9 @@ type UiMessageKind =
 
 type UiMessageStatus = "streaming" | "completed" | "error";
 type MainPanel = "chat" | "skills";
+type LicensePhase = "checking" | "missing" | "valid" | "error";
+type AuthPhase = "checking" | "anonymous" | "authenticated" | "error";
+type AuthMode = "login" | "register";
 
 interface UiMessage {
   id: string;
@@ -304,6 +314,515 @@ function renderMessageAttachments(attachments?: MessageAttachment[]) {
   );
 }
 
+function renderActivationScreen(
+  phase: LicensePhase,
+  status: LicenseStatus | null,
+  licenseBusy: boolean,
+  licenseError: string | null,
+  onImportClick: () => void,
+  onRefresh: () => void,
+  onClear: () => void,
+) {
+  const isChecking = phase === "checking";
+  const title = status?.valid
+    ? "License Verified"
+    : isChecking
+      ? "Checking Local License"
+      : "License Required";
+  const subtitle = status?.valid
+    ? "This desktop app is licensed for the current account."
+    : "Import a signed license file before entering the login workspace.";
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, rgba(59,130,246,0.22), transparent 42%), linear-gradient(160deg, #020617 0%, #0f172a 55%, #111827 100%)",
+        color: "#f8fafc",
+        display: "grid",
+        placeItems: "center",
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 760,
+          borderRadius: 28,
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(15,23,42,0.86)",
+          boxShadow: "0 32px 90px rgba(2, 6, 23, 0.52)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            padding: "28px 30px 22px",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            background:
+              "linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(15,23,42,0) 100%)",
+          }}
+        >
+          <Space size={14} align="start">
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 18,
+                background: "rgba(59,130,246,0.16)",
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+              }}
+            >
+              <DesktopOutlined style={{ color: "#93c5fd", fontSize: 22 }} />
+            </div>
+            <div>
+              <Title level={2} style={{ margin: 0, color: "#f8fafc" }}>
+                {title}
+              </Title>
+              <Paragraph
+                style={{
+                  margin: "8px 0 0",
+                  color: "#94a3b8",
+                  fontSize: 14,
+                  lineHeight: 1.8,
+                }}
+              >
+                {subtitle}
+              </Paragraph>
+            </div>
+          </Space>
+        </div>
+
+        <div style={{ padding: "28px 30px 30px" }}>
+          {licenseError ? (
+            <Alert
+              type="error"
+              showIcon
+              message="License Error"
+              description={licenseError}
+              style={{ marginBottom: 18 }}
+            />
+          ) : null}
+
+          {status ? (
+            <Alert
+              type={status.valid ? "success" : phase === "error" ? "error" : "info"}
+              showIcon
+              message={status.message}
+              style={{ marginBottom: 18 }}
+            />
+          ) : null}
+
+          <div
+            style={{
+              borderRadius: 22,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(2,6,23,0.5)",
+              padding: 22,
+              marginBottom: 18,
+            }}
+          >
+            <Space direction="vertical" size={12} style={{ display: "flex" }}>
+              <div>
+                <Text style={{ color: "#94a3b8", fontSize: 12 }}>Licensed Account</Text>
+                <Paragraph style={{ margin: "8px 0 0", color: "#dbeafe", fontSize: 13 }}>
+                  {status?.accountEmail ?? "Pending..."}
+                </Paragraph>
+              </div>
+
+              <div>
+                <Text style={{ color: "#94a3b8", fontSize: 12 }}>License Storage</Text>
+                <Paragraph style={{ margin: "8px 0 0", color: "#cbd5e1", fontSize: 13 }}>
+                  {status?.appDataDir ?? "Pending..."}
+                </Paragraph>
+              </div>
+
+              {status?.licenseId ? (
+                <div>
+                  <Text style={{ color: "#94a3b8", fontSize: 12 }}>License ID</Text>
+                  <Paragraph style={{ margin: "8px 0 0", color: "#f8fafc", fontSize: 13 }}>
+                    {status.licenseId}
+                  </Paragraph>
+                </div>
+              ) : null}
+            </Space>
+          </div>
+
+          <Space wrap size={12}>
+            <Button
+              type="primary"
+              size="large"
+              icon={licenseBusy || isChecking ? <LoadingOutlined /> : <FileTextOutlined />}
+              onClick={onImportClick}
+              disabled={licenseBusy || isChecking}
+            >
+              Import License File
+            </Button>
+            <Button size="large" onClick={onRefresh} disabled={licenseBusy}>
+              Refresh Status
+            </Button>
+            <Button danger size="large" onClick={onClear} disabled={licenseBusy}>
+              Clear License
+            </Button>
+          </Space>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function renderAuthScreen(
+  mode: AuthMode,
+  email: string,
+  password: string,
+  busy: boolean,
+  sessionStatus: SessionStatus | null,
+  authError: string | null,
+  onModeChange: (mode: AuthMode) => void,
+  onEmailChange: (value: string) => void,
+  onPasswordChange: (value: string) => void,
+  onSubmit: () => void,
+) {
+  const title = mode === "login" ? "Sign In" : "Create Local Account";
+  const subtitle =
+    mode === "login"
+      ? "Use the same email address that your desktop license was issued to."
+      : "Create a local account on this device, then sign in with the licensed email.";
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at 18% 18%, rgba(51,167,255,0.18), transparent 24%), radial-gradient(circle at 82% 16%, rgba(246,197,102,0.14), transparent 20%), linear-gradient(135deg, #111111 0%, #171717 46%, #101828 100%)",
+        color: "#f8fafc",
+        display: "grid",
+        placeItems: "center",
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 1180,
+          minHeight: 720,
+          borderRadius: 32,
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(18,18,18,0.96)",
+          boxShadow: "0 40px 120px rgba(0,0,0,0.45)",
+          overflow: "hidden",
+          display: "flex",
+          flexWrap: "wrap",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            flex: "1 1 620px",
+            minWidth: 320,
+            padding: "44px 44px 40px",
+            background:
+              "radial-gradient(circle at 20% 20%, rgba(51,167,255,0.16), transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)",
+            borderRight: "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 14px",
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.03)",
+              color: "#d4d4d8",
+              fontSize: 13,
+            }}
+          >
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 999,
+                background: "#33a7ff",
+                boxShadow: "0 0 16px rgba(51,167,255,0.8)",
+              }}
+            />
+            HZCUclaw Desktop
+          </div>
+
+          <div style={{ maxWidth: 520, marginTop: 92 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "8px 14px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#f6c566",
+                fontSize: 12,
+                letterSpacing: 0.4,
+                textTransform: "uppercase",
+              }}
+            >
+              Licensed workspace
+            </div>
+
+            <Title
+              level={1}
+              style={{
+                margin: "22px 0 16px",
+                color: "#fafafa",
+                fontSize: 64,
+                lineHeight: 1.02,
+                letterSpacing: -2.4,
+                fontWeight: 600,
+              }}
+            >
+              Desktop AI,
+              <br />
+              gated by
+              <br />
+              license and account.
+            </Title>
+
+            <Paragraph
+              style={{
+                margin: 0,
+                color: "#9f9fa9",
+                fontSize: 16,
+                lineHeight: 1.9,
+                maxWidth: 460,
+              }}
+            >
+              Inspired by structured auth layouts like Rive, this screen keeps the
+              desktop entry flow clear: validate the local license first, then sign in
+              with the matching account.
+            </Paragraph>
+
+            <div
+              style={{
+                marginTop: 42,
+                display: "grid",
+                gap: 16,
+              }}
+            >
+              {[
+                "Persistent local session until manual sign-out",
+                "License email and login email must match",
+                "Online and local model modes stay behind the same auth gate",
+              ].map((item) => (
+                <div
+                  key={item}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: "14px 16px",
+                    borderRadius: 18,
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    color: "#e5e7eb",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 999,
+                      background: "linear-gradient(135deg, #33a7ff 0%, #4cbe9c 100%)",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: 14 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: "relative",
+            flex: "1 1 420px",
+            minWidth: 320,
+            display: "grid",
+            placeItems: "center",
+            padding: "44px 34px",
+            background:
+              "radial-gradient(circle at 80% 0%, rgba(255,255,255,0.05), transparent 28%), #111111",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              borderRadius: 28,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.03)",
+              padding: 28,
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            <Text
+              style={{
+                display: "block",
+                color: "#f5f5f5",
+                fontSize: 28,
+                fontWeight: 600,
+                letterSpacing: -0.6,
+              }}
+            >
+              {title}
+            </Text>
+            <Paragraph
+              style={{
+                margin: "10px 0 0",
+                color: "#8f8f9a",
+                lineHeight: 1.8,
+                fontSize: 14,
+              }}
+            >
+              {subtitle}
+            </Paragraph>
+
+            <Segmented
+              block
+              size="large"
+              value={mode}
+              onChange={(value) => onModeChange(value as AuthMode)}
+              options={[
+                { label: "登录", value: "login" },
+                { label: "注册", value: "register" },
+              ]}
+              style={{
+                marginTop: 24,
+                marginBottom: 20,
+                background: "rgba(255,255,255,0.04)",
+              }}
+            />
+
+            {authError ? (
+              <Alert
+                type="error"
+                showIcon
+                message="Authentication Error"
+                description={authError}
+                style={{ marginBottom: 18 }}
+              />
+            ) : null}
+
+            {sessionStatus ? (
+              <Alert
+                type={sessionStatus.authenticated ? "success" : "info"}
+                showIcon
+                message={sessionStatus.message}
+                style={{ marginBottom: 18 }}
+              />
+            ) : null}
+
+            <Space direction="vertical" size={14} style={{ display: "flex" }}>
+              <div>
+                <Text
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    color: "#c9c9cf",
+                    fontSize: 13,
+                  }}
+                >
+                  邮箱
+                </Text>
+                <Input
+                  size="large"
+                  placeholder="demo@example.com"
+                  value={email}
+                  disabled={busy}
+                  onChange={(event) => onEmailChange(event.target.value)}
+                  style={{
+                    height: 48,
+                    borderRadius: 16,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "#1d1d1d",
+                    color: "#f8fafc",
+                  }}
+                />
+              </div>
+
+              <div>
+                <Text
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    color: "#c9c9cf",
+                    fontSize: 13,
+                  }}
+                >
+                  密码
+                </Text>
+                <Input.Password
+                  size="large"
+                  placeholder="至少 6 位"
+                  value={password}
+                  disabled={busy}
+                  onChange={(event) => onPasswordChange(event.target.value)}
+                  onPressEnter={() => void onSubmit()}
+                  style={{
+                    height: 48,
+                    borderRadius: 16,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "#1d1d1d",
+                    color: "#f8fafc",
+                  }}
+                />
+              </div>
+
+              <Button
+                type="primary"
+                size="large"
+                icon={busy ? <LoadingOutlined /> : undefined}
+                onClick={onSubmit}
+                disabled={!email.trim() || !password.trim() || busy}
+                style={{
+                  height: 52,
+                  marginTop: 6,
+                  borderRadius: 16,
+                  border: "none",
+                  background: "linear-gradient(135deg, #33a7ff 0%, #1677ff 100%)",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  boxShadow: "0 20px 50px rgba(23,119,255,0.25)",
+                }}
+              >
+                {mode === "login" ? "登录并进入桌面" : "创建设备账号"}
+              </Button>
+            </Space>
+
+            <div
+              style={{
+                marginTop: 22,
+                paddingTop: 18,
+                borderTop: "1px solid rgba(255,255,255,0.08)",
+                color: "#777783",
+                fontSize: 12,
+                lineHeight: 1.8,
+              }}
+            >
+              The local account is stored only on this device. Logging out clears the
+              session but keeps the imported license.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   // mode: 当前使用在线模式还是本地模式
   // backendStatuses: 后端环境变量配置状态
@@ -331,6 +850,18 @@ export default function App() {
     [],
   );
   const [dragActive, setDragActive] = useState(false);
+  const [licensePhase, setLicensePhase] = useState<LicensePhase>("checking");
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
+  const [licenseBusy, setLicenseBusy] = useState(false);
+  const [licenseError, setLicenseError] = useState<string | null>(null);
+  const [authPhase, setAuthPhase] = useState<AuthPhase>("checking");
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
   // conversationRef 保存真正传给后端模型代理的对话历史。
   const conversationRef = useRef<ConversationMessage[]>([]);
@@ -339,7 +870,32 @@ export default function App() {
   const messageScrollRef = useRef<HTMLDivElement | null>(null);
   const approvalResolverRef = useRef<((allowed: boolean) => void) | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const licenseInputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<UiMessage[]>([]);
+
+  const resetPendingAttachments = () => {
+    setPendingAttachments((current) => {
+      current.forEach((attachment) => {
+        if (attachment.previewUrl) {
+          URL.revokeObjectURL(attachment.previewUrl);
+        }
+      });
+      return [];
+    });
+  };
+
+  const clearAuthenticatedState = () => {
+    setCurrentUser(null);
+    setSessionStatus(null);
+    setAuthPhase("anonymous");
+    setAuthError(null);
+    setBackendStatuses(null);
+    setLoadingStatuses(true);
+    setSkills([]);
+    setLoadingSkills(true);
+    resetPendingAttachments();
+    setRunning(false);
+  };
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -351,6 +907,21 @@ export default function App() {
         releaseAttachmentPreviews(message.attachments);
       });
     };
+  }, []);
+
+  useEffect(() => {
+    const loadLicenseStatus = async () => {
+      try {
+        const status = await invoke<LicenseStatus>("get_license_status");
+        setLicenseStatus(status);
+        setLicensePhase(status.valid ? "valid" : "missing");
+      } catch (error) {
+        setLicenseError(formatUnknownError(error));
+        setLicensePhase("error");
+      }
+    };
+
+    void loadLicenseStatus();
   }, []);
 
   useEffect(() => {
@@ -371,6 +942,39 @@ export default function App() {
   }, [activePanel, messages, runtimeNotice]);
 
   useEffect(() => {
+    if (licensePhase !== "valid") {
+      clearAuthenticatedState();
+      return;
+    }
+
+    const loadSessionStatus = async () => {
+      try {
+        const status = await invoke<SessionStatus>("get_session_status");
+        setSessionStatus(status);
+        setAuthPhase(status.authenticated ? "authenticated" : "anonymous");
+        setAuthError(null);
+
+        if (status.authenticated) {
+          const user = await invoke<CurrentUser>("get_current_user");
+          setCurrentUser(user);
+          setAuthEmail(user.email);
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (error) {
+        setAuthError(formatUnknownError(error));
+        setAuthPhase("error");
+      }
+    };
+
+    void loadSessionStatus();
+  }, [licensePhase]);
+
+  useEffect(() => {
+    if (licensePhase !== "valid" || authPhase !== "authenticated") {
+      return;
+    }
+
     const loadStatuses = async () => {
       try {
         const statuses = await invoke<BackendModeStatuses>(
@@ -390,9 +994,13 @@ export default function App() {
     };
 
     void loadStatuses();
-  }, []);
+  }, [authPhase, licensePhase]);
 
   useEffect(() => {
+    if (licensePhase !== "valid" || authPhase !== "authenticated") {
+      return;
+    }
+
     const loadSkills = async () => {
       try {
         const skillSummaries = await invoke<SkillSummary[]>("get_skill_summaries");
@@ -405,7 +1013,7 @@ export default function App() {
     };
 
     void loadSkills();
-  }, []);
+  }, [authPhase, licensePhase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -603,6 +1211,150 @@ export default function App() {
   }, []);
 
   const activeStatus = backendStatuses?.[mode];
+  const refreshLicenseStatus = async () => {
+    try {
+      const status = await invoke<LicenseStatus>("get_license_status");
+      setLicenseStatus(status);
+      setLicensePhase(status.valid ? "valid" : "missing");
+      setLicenseError(null);
+    } catch (error) {
+      setLicenseError(formatUnknownError(error));
+      setLicensePhase("error");
+    }
+  };
+
+  const refreshSessionStatus = async () => {
+    try {
+      const status = await invoke<SessionStatus>("get_session_status");
+      setSessionStatus(status);
+      setAuthPhase(status.authenticated ? "authenticated" : "anonymous");
+      setAuthError(null);
+
+      if (status.authenticated) {
+        const user = await invoke<CurrentUser>("get_current_user");
+        setCurrentUser(user);
+        setAuthEmail(user.email);
+      } else {
+        setCurrentUser(null);
+      }
+    } catch (error) {
+      setAuthError(formatUnknownError(error));
+      setAuthPhase("error");
+    }
+  };
+
+  const openLicensePicker = () => {
+    licenseInputRef.current?.click();
+  };
+
+  const clearLocalLicense = async () => {
+    setLicenseBusy(true);
+
+    try {
+      const status = await invoke<LicenseStatus>("clear_license");
+      setLicenseStatus(status);
+      setLicensePhase("missing");
+      setLicenseError(null);
+      clearAuthenticatedState();
+    } catch (error) {
+      setLicenseError(formatUnknownError(error));
+      setLicensePhase("error");
+    } finally {
+      setLicenseBusy(false);
+    }
+  };
+
+  const handleLicenseImport = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setLicenseBusy(true);
+
+    try {
+      const contents = await file.text();
+      const result = await invoke<ImportLicenseResult>("import_license", {
+        request: {
+          fileName: file.name,
+          contents,
+        } satisfies ImportLicenseRequest,
+      });
+
+      setLicenseStatus(result.status);
+      setLicensePhase(result.valid ? "valid" : "missing");
+      setLicenseError(null);
+      setAuthPhase("checking");
+    } catch (error) {
+      setLicenseError(formatUnknownError(error));
+      await refreshLicenseStatus();
+    } finally {
+      event.target.value = "";
+      setLicenseBusy(false);
+    }
+  };
+
+  const handleAuthSubmit = async () => {
+    if (!authEmail.trim() || !authPassword.trim()) {
+      return;
+    }
+
+    setAuthBusy(true);
+    setAuthError(null);
+
+    try {
+      if (authMode === "register") {
+        const status = await invoke<SessionStatus>("register_account", {
+          request: {
+            email: authEmail,
+            password: authPassword,
+          } satisfies RegisterAccountRequest,
+        });
+        setSessionStatus(status);
+        setAuthMode("login");
+      } else {
+        const status = await invoke<SessionStatus>("login", {
+          request: {
+            email: authEmail,
+            password: authPassword,
+          } satisfies LoginRequest,
+        });
+        setSessionStatus(status);
+        setAuthPhase(status.authenticated ? "authenticated" : "anonymous");
+        if (status.authenticated) {
+          const user = await invoke<CurrentUser>("get_current_user");
+          setCurrentUser(user);
+          setAuthEmail(user.email);
+          setAuthPassword("");
+        }
+      }
+    } catch (error) {
+      setAuthError(formatUnknownError(error));
+      await refreshSessionStatus();
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setAuthBusy(true);
+
+    try {
+      const status = await invoke<SessionStatus>("logout");
+      setSessionStatus(status);
+      setAuthPhase("anonymous");
+      setAuthPassword("");
+      clearAuthenticatedState();
+    } catch (error) {
+      setAuthError(formatUnknownError(error));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const canSend =
     (Boolean(input.trim()) || pendingAttachments.length > 0) &&
     !running &&
@@ -630,6 +1382,64 @@ export default function App() {
         .slice(0, 8),
     [messages],
   );
+
+  if (licensePhase !== "valid") {
+    return (
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: "#3b82f6",
+            borderRadius: 18,
+            fontFamily: '"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif',
+          },
+        }}
+      >
+        <input
+          ref={licenseInputRef}
+          type="file"
+          accept=".json,.license,.lic,.dat,text/plain,application/json"
+          onChange={handleLicenseImport}
+          style={{ display: "none" }}
+        />
+        {renderActivationScreen(
+          licensePhase,
+          licenseStatus,
+          licenseBusy,
+          licenseError,
+          openLicensePicker,
+          () => void refreshLicenseStatus(),
+          () => void clearLocalLicense(),
+        )}
+      </ConfigProvider>
+    );
+  }
+
+  if (authPhase !== "authenticated") {
+    return (
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: "#3b82f6",
+            borderRadius: 18,
+            fontFamily: '"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif',
+          },
+        }}
+      >
+        {renderAuthScreen(
+          authMode,
+          authEmail,
+          authPassword,
+          authBusy,
+          sessionStatus,
+          authError,
+          setAuthMode,
+          setAuthEmail,
+          setAuthPassword,
+          () => void handleAuthSubmit(),
+        )}
+      </ConfigProvider>
+    );
+  }
 
   const toggleMode = () => {
     setMode((current) => (current === "online" ? "local" : "online"));
@@ -706,17 +1516,6 @@ export default function App() {
       }
 
       return current.filter((attachment) => attachment.id !== attachmentId);
-    });
-  };
-
-  const resetPendingAttachments = () => {
-    setPendingAttachments((current) => {
-      current.forEach((attachment) => {
-        if (attachment.previewUrl) {
-          URL.revokeObjectURL(attachment.previewUrl);
-        }
-      });
-      return [];
     });
   };
 
@@ -1441,6 +2240,37 @@ export default function App() {
                      跨平台AI辅助工具
                   </Paragraph>
                 </Space>
+
+                <div
+                  style={{
+                    marginBottom: 18,
+                    borderRadius: 20,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "rgba(5,10,18,0.6)",
+                    padding: 16,
+                  }}
+                >
+                  <Text
+                    style={{
+                      display: "block",
+                      color: "#94a3b8",
+                      fontSize: 12,
+                      marginBottom: 6,
+                    }}
+                  >
+                    当前账号
+                  </Text>
+                  <Text style={{ display: "block", color: "#f8fafc", fontSize: 14 }}>
+                    {currentUser?.email ?? sessionStatus?.email ?? "Unknown"}
+                  </Text>
+                  <Button
+                    type="text"
+                    onClick={() => void handleLogout()}
+                    style={{ marginTop: 10, paddingInline: 0, color: "#93c5fd" }}
+                  >
+                    退出登录
+                  </Button>
+                </div>
 
                 <div
                   style={{

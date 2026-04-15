@@ -1,0 +1,1147 @@
+{
+  "meta": {
+    "url": "http://localhost:1420",
+    "title": "AI-Universal-Assistant",
+    "capturedAt": "2026-04-13T08:26:27.429Z",
+    "viewportSamples": {
+      "desktop": "1440x900",
+      "mobile": "390x844"
+    },
+    "pageType": "web-page",
+    "locale": "en"
+  },
+  "summary": {
+    "visualStyle": [
+      "layered",
+      "structured"
+    ],
+    "primaryLayout": "",
+    "notes": "web-page captured from a live page with 30 visible reference nodes."
+  },
+  "designTokens": {
+    "colors": {
+      "background": "#FFFFFF",
+      "surface": "rgba(15,23,42,0.86)",
+      "textPrimary": "rgba(0,0,0,0.88)",
+      "textSecondary": "#FFFFFF",
+      "border": "#E5E7EB",
+      "accent": "#FFFFFF",
+      "palette": [
+        {
+          "value": "#E5E7EB",
+          "count": 24
+        },
+        {
+          "value": "rgba(0,0,0,0.88)",
+          "count": 4
+        },
+        {
+          "value": "#FFFFFF",
+          "count": 2
+        },
+        {
+          "value": "rgba(255,255,255,0.08)",
+          "count": 2
+        },
+        {
+          "value": "rgba(15,23,42,0.86)",
+          "count": 1
+        },
+        {
+          "value": "rgba(59,130,246,0.16)",
+          "count": 1
+        },
+        {
+          "value": "#FFF2F0",
+          "count": 1
+        },
+        {
+          "value": "rgba(2,6,23,0.5)",
+          "count": 1
+        }
+      ],
+      "customProperties": {
+        "--tw-ring-offset-shadow": "0 0 #0000",
+        "--tw-ring-shadow": "0 0 #0000",
+        "--tw-skew-x": "0",
+        "--tw-shadow": "0 0 #0000",
+        "--tw-translate-x": "0",
+        "--tw-ring-offset-width": "0px",
+        "--tw-scroll-snap-strictness": "proximity",
+        "--tw-border-spacing-x": "0",
+        "--tw-scale-x": "1",
+        "--tw-shadow-colored": "0 0 #0000",
+        "--tw-border-spacing-y": "0",
+        "--tw-scale-y": "1",
+        "--tw-skew-y": "0",
+        "--tw-ring-color": "rgb(59 130 246 / 0.5)",
+        "--tw-translate-y": "0",
+        "--tw-rotate": "0",
+        "--tw-ring-offset-color": "#fff"
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "base": "\"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "heading": "\"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "mono": ""
+      },
+      "fontSizes": {
+        "scale": [
+          "14px",
+          "16px",
+          "30px"
+        ],
+        "xs": "14px",
+        "sm": "16px",
+        "md": "30px"
+      },
+      "fontWeights": {
+        "scale": [
+          "400",
+          "600"
+        ],
+        "regular": "400",
+        "medium": "600"
+      },
+      "lineHeights": {
+        "scale": [
+          "1.267",
+          "1.5",
+          "1.571",
+          "1.8"
+        ],
+        "tight": "1.267",
+        "normal": "1.5",
+        "relaxed": "1.571",
+        "step4": "1.8"
+      },
+      "letterSpacings": {
+        "scale": [
+          "normal"
+        ],
+        "tight": "normal"
+      }
+    },
+    "spacing": {
+      "scale": [
+        "24px",
+        "28px",
+        "30px",
+        "22px",
+        "14px",
+        "8px",
+        "20px",
+        "18px",
+        "12px",
+        "15px"
+      ],
+      "sectionGap": "",
+      "containerPaddingX": "0px",
+      "cardPadding": "24px"
+    },
+    "radius": {
+      "scale": [
+        "16px",
+        "18px",
+        "22px",
+        "28px"
+      ],
+      "sm": "16px",
+      "md": "18px",
+      "lg": "22px",
+      "xl": "28px"
+    },
+    "shadow": {
+      "card": "rgba(2,6,23,0.52) 0px 32px 90px 0px",
+      "overlay": "rgba(5,138,255,0.06) 0px 2px 0px 0px",
+      "scale": [
+        "rgba(2,6,23,0.52) 0px 32px 90px 0px",
+        "rgba(5,138,255,0.06) 0px 2px 0px 0px",
+        "rgba(0,0,0,0.02) 0px 2px 0px 0px",
+        "rgba(255,38,5,0.06) 0px 2px 0px 0px"
+      ]
+    },
+    "border": {
+      "default": "1px solid rgba(255,255,255,0.08)",
+      "strong": "1px solid #FFCCC7"
+    },
+    "motion": {
+      "durations": [
+        "0.2s"
+      ],
+      "easings": [
+        "ease",
+        "cubic-bezier(0.645"
+      ]
+    },
+    "breakpoints": {
+      "sampled": {
+        "desktop": "1440px",
+        "mobile": "390px"
+      },
+      "detected": [
+        "640px",
+        "768px",
+        "1024px",
+        "1280px",
+        "1536px"
+      ]
+    }
+  },
+  "layout": {
+    "page": {
+      "structure": [],
+      "maxWidth": "1440px",
+      "scrollDirection": "vertical"
+    },
+    "containers": []
+  },
+  "components": [
+    {
+      "id": "cmp_container",
+      "sourcePath": "body[1]",
+      "name": "Container",
+      "role": "body",
+      "semanticTag": "body",
+      "purpose": "body",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container2"
+      ]
+    },
+    {
+      "id": "cmp_container2",
+      "sourcePath": "body[1]>div[1]",
+      "name": "Container2",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "div",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container3"
+      ]
+    },
+    {
+      "id": "cmp_container3",
+      "sourcePath": "body[1]>div[1]>div[1]",
+      "name": "Container3",
+      "role": "grid",
+      "semanticTag": "div",
+      "purpose": "grid",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      "layout": {
+        "display": "grid",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "center",
+        "gap": "normal",
+        "gridColumns": "1392px"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "24px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container4"
+      ]
+    },
+    {
+      "id": "cmp_container4",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]",
+      "name": "Container4",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "div",
+      "text": "",
+      "boundingBox": {
+        "x": 340,
+        "y": 190.9,
+        "width": 760,
+        "height": 518.2
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "rgba(15,23,42,0.86)",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "28px",
+        "border": "1px solid rgba(255,255,255,0.08)",
+        "boxShadow": "rgba(2,6,23,0.52) 0px 32px 90px 0px",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "760px"
+      },
+      "children": [
+        "cmp_container5",
+        "cmp_container8"
+      ]
+    },
+    {
+      "id": "cmp_container5",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[1]",
+      "name": "Container5",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "div",
+      "text": "",
+      "boundingBox": {
+        "x": 341,
+        "y": 191.9,
+        "width": 758,
+        "height": 122.2
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "28px 30px 22px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container6"
+      ]
+    },
+    {
+      "id": "cmp_container6",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[1]>div[1]",
+      "name": "Container6",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "License Required Import a signed license file before entering the login workspace.",
+      "text": "License Required Import a signed license file before entering the login workspace.",
+      "boundingBox": {
+        "x": 371,
+        "y": 219.9,
+        "width": 462.2,
+        "height": 71.2
+      },
+      "layout": {
+        "display": "inline-flex",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "flex-start",
+        "gap": "14px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "14px",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container7"
+      ]
+    },
+    {
+      "id": "cmp_container7",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[1]>div[1]>div[2]>div[1]",
+      "name": "Container7",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "License Required Import a signed license file before entering the login workspace.",
+      "text": "License Required Import a signed license file before entering the login workspace.",
+      "boundingBox": {
+        "x": 437,
+        "y": 219.9,
+        "width": 396.2,
+        "height": 71.2
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_section-heading"
+      ]
+    },
+    {
+      "id": "cmp_section-heading",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[1]>div[1]>div[2]>div[1]>h2[1]",
+      "name": "SectionHeading",
+      "role": "h2",
+      "semanticTag": "h2",
+      "purpose": "License Required",
+      "text": "License Required",
+      "boundingBox": {
+        "x": 437,
+        "y": 219.9,
+        "width": 396.2,
+        "height": 38
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "30px",
+        "fontWeight": "600",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_container8",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]",
+      "name": "Container8",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "Import License File Refresh Status Clear License",
+      "text": "Import License File Refresh Status Clear License",
+      "boundingBox": {
+        "x": 341,
+        "y": 314.1,
+        "width": 758,
+        "height": 394
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "28px 30px 30px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container9",
+        "cmp_container11"
+      ]
+    },
+    {
+      "id": "cmp_container9",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[1]",
+      "name": "Container9",
+      "role": "alert",
+      "semanticTag": "div",
+      "purpose": "License Error Cannot read properties of undefined (reading 'invoke')",
+      "text": "License Error Cannot read properties of undefined (reading 'invoke')",
+      "boundingBox": {
+        "x": 371,
+        "y": 342.1,
+        "width": 698,
+        "height": 97.1
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "flex-start",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "#FFF2F0",
+        "textColor": "rgba(0,0,0,0.88)",
+        "padding": "20px 24px",
+        "gap": "normal",
+        "borderRadius": "16px",
+        "border": "1px solid #FFCCC7",
+        "boxShadow": "",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container10"
+      ]
+    },
+    {
+      "id": "cmp_container10",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[1]>div[1]",
+      "name": "Container10",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "License Error Cannot read properties of undefined (reading 'invoke')",
+      "text": "License Error Cannot read properties of undefined (reading 'invoke')",
+      "boundingBox": {
+        "x": 432,
+        "y": 363.1,
+        "width": 612,
+        "height": 55.1
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "rgba(0,0,0,0.88)",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_container11",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[2]",
+      "name": "Container11",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "div",
+      "text": "",
+      "boundingBox": {
+        "x": 371,
+        "y": 457.2,
+        "width": 698,
+        "height": 162.8
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "rgba(2,6,23,0.5)",
+        "textColor": "#F8FAFC",
+        "padding": "22px",
+        "gap": "normal",
+        "borderRadius": "22px",
+        "border": "1px solid rgba(255,255,255,0.08)",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container12"
+      ]
+    },
+    {
+      "id": "cmp_container12",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[2]>div[1]",
+      "name": "Container12",
+      "role": "stack",
+      "semanticTag": "div",
+      "purpose": "stack",
+      "text": "",
+      "boundingBox": {
+        "x": 394,
+        "y": 480.2,
+        "width": 652,
+        "height": 116.8
+      },
+      "layout": {
+        "display": "flex",
+        "direction": "column",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "12px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "12px",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container13",
+        "cmp_container14"
+      ]
+    },
+    {
+      "id": "cmp_container13",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[2]>div[1]>div[1]>div[1]",
+      "name": "Container13",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "div",
+      "text": "",
+      "boundingBox": {
+        "x": 394,
+        "y": 480.2,
+        "width": 652,
+        "height": 52.4
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_container14",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[2]>div[1]>div[2]>div[1]",
+      "name": "Container14",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "div",
+      "text": "",
+      "boundingBox": {
+        "x": 394,
+        "y": 544.7,
+        "width": 652,
+        "height": 52.4
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_button",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[3]>div[1]>button[1]",
+      "name": "Button",
+      "role": "button",
+      "semanticTag": "button",
+      "purpose": "Import License File",
+      "text": "Import License File",
+      "boundingBox": {
+        "x": 371,
+        "y": 638.1,
+        "width": 187.9,
+        "height": 40
+      },
+      "layout": {
+        "display": "inline-flex",
+        "direction": "row",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "gap": "8px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "#3B82F6",
+        "textColor": "#FFFFFF",
+        "padding": "0px 15px",
+        "gap": "8px",
+        "borderRadius": "16px",
+        "border": "1px solid",
+        "boxShadow": "rgba(5,138,255,0.06) 0px 2px 0px 0px",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_button2",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[3]>div[2]>button[1]",
+      "name": "Button2",
+      "role": "button",
+      "semanticTag": "button",
+      "purpose": "Refresh Status",
+      "text": "Refresh Status",
+      "boundingBox": {
+        "x": 570.9,
+        "y": 638.1,
+        "width": 131.5,
+        "height": 40
+      },
+      "layout": {
+        "display": "inline-flex",
+        "direction": "row",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "gap": "8px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "#FFFFFF",
+        "textColor": "rgba(0,0,0,0.88)",
+        "padding": "0px 15px",
+        "gap": "8px",
+        "borderRadius": "16px",
+        "border": "1px solid #D9D9D9",
+        "boxShadow": "rgba(0,0,0,0.02) 0px 2px 0px 0px",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    },
+    {
+      "id": "cmp_button3",
+      "sourcePath": "body[1]>div[1]>div[1]>div[1]>div[2]>div[3]>div[3]>button[1]",
+      "name": "Button3",
+      "role": "button",
+      "semanticTag": "button",
+      "purpose": "Clear License",
+      "text": "Clear License",
+      "boundingBox": {
+        "x": 714.3,
+        "y": 638.1,
+        "width": 123.6,
+        "height": 40
+      },
+      "layout": {
+        "display": "inline-flex",
+        "direction": "row",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "gap": "8px",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "#FFFFFF",
+        "textColor": "#FF4D4F",
+        "padding": "0px 15px",
+        "gap": "8px",
+        "borderRadius": "16px",
+        "border": "1px solid #FF4D4F",
+        "boxShadow": "rgba(255,38,5,0.06) 0px 2px 0px 0px",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    }
+  ],
+  "componentTree": {
+    "root": "page_root",
+    "nodes": [
+      {
+        "id": "page_root",
+        "name": "PageRoot",
+        "children": [
+          "cmp_container",
+          "cmp_button",
+          "cmp_button2",
+          "cmp_button3"
+        ]
+      },
+      {
+        "id": "cmp_container",
+        "name": "Container",
+        "children": [
+          "cmp_container2"
+        ]
+      },
+      {
+        "id": "cmp_container2",
+        "name": "Container2",
+        "children": [
+          "cmp_container3"
+        ]
+      },
+      {
+        "id": "cmp_container3",
+        "name": "Container3",
+        "children": [
+          "cmp_container4"
+        ]
+      },
+      {
+        "id": "cmp_container4",
+        "name": "Container4",
+        "children": [
+          "cmp_container5",
+          "cmp_container8"
+        ]
+      },
+      {
+        "id": "cmp_container5",
+        "name": "Container5",
+        "children": [
+          "cmp_container6"
+        ]
+      },
+      {
+        "id": "cmp_container6",
+        "name": "Container6",
+        "children": [
+          "cmp_container7"
+        ]
+      },
+      {
+        "id": "cmp_container7",
+        "name": "Container7",
+        "children": [
+          "cmp_section-heading"
+        ]
+      },
+      {
+        "id": "cmp_section-heading",
+        "name": "SectionHeading",
+        "children": []
+      },
+      {
+        "id": "cmp_container8",
+        "name": "Container8",
+        "children": [
+          "cmp_container9",
+          "cmp_container11"
+        ]
+      },
+      {
+        "id": "cmp_container9",
+        "name": "Container9",
+        "children": [
+          "cmp_container10"
+        ]
+      },
+      {
+        "id": "cmp_container10",
+        "name": "Container10",
+        "children": []
+      },
+      {
+        "id": "cmp_container11",
+        "name": "Container11",
+        "children": [
+          "cmp_container12"
+        ]
+      },
+      {
+        "id": "cmp_container12",
+        "name": "Container12",
+        "children": [
+          "cmp_container13",
+          "cmp_container14"
+        ]
+      },
+      {
+        "id": "cmp_container13",
+        "name": "Container13",
+        "children": []
+      },
+      {
+        "id": "cmp_container14",
+        "name": "Container14",
+        "children": []
+      },
+      {
+        "id": "cmp_button",
+        "name": "Button",
+        "children": []
+      },
+      {
+        "id": "cmp_button2",
+        "name": "Button2",
+        "children": []
+      },
+      {
+        "id": "cmp_button3",
+        "name": "Button3",
+        "children": []
+      }
+    ]
+  },
+  "content": {
+    "headings": [
+      {
+        "level": 2,
+        "text": "License Required",
+        "componentId": "cmp_section-heading"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "Import License File",
+        "componentId": "cmp_button"
+      },
+      {
+        "text": "Refresh Status",
+        "componentId": "cmp_button2"
+      },
+      {
+        "text": "Clear License",
+        "componentId": "cmp_button3"
+      }
+    ],
+    "links": []
+  },
+  "assets": {
+    "images": [],
+    "icons": []
+  },
+  "responsive": {
+    "mediaQueries": [
+      "(min-width: 640px)",
+      "(min-width: 768px)",
+      "(min-width: 1024px)",
+      "(min-width: 1280px)",
+      "(min-width: 1536px)"
+    ],
+    "strategies": [
+      {
+        "componentId": "cmp_container",
+        "rule": "Container compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container2",
+        "rule": "Container2 compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container3",
+        "rule": "Container3 changes grid columns at mobile width"
+      },
+      {
+        "componentId": "cmp_container4",
+        "rule": "Container4 compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container5",
+        "rule": "Container5 compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container6",
+        "rule": "Container6 compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container7",
+        "rule": "Container7 compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_section-heading",
+        "rule": "SectionHeading compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container8",
+        "rule": "Container8 compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container9",
+        "rule": "Container9 compresses significantly at mobile width"
+      }
+    ]
+  },
+  "implementationHints": {
+    "frameworkMapping": {
+      "react": [
+        "Container",
+        "Container2",
+        "Container3",
+        "Container4",
+        "Container5",
+        "Container6",
+        "Container7",
+        "SectionHeading",
+        "Container8",
+        "Container9",
+        "Container10",
+        "Container11",
+        "Container12",
+        "Container13",
+        "Container14",
+        "Button",
+        "Button2",
+        "Button3"
+      ],
+      "vue": [
+        "Container",
+        "Container2",
+        "Container3",
+        "Container4",
+        "Container5",
+        "Container6",
+        "Container7",
+        "SectionHeading",
+        "Container8",
+        "Container9",
+        "Container10",
+        "Container11",
+        "Container12",
+        "Container13",
+        "Container14",
+        "Button",
+        "Button2",
+        "Button3"
+      ],
+      "html": [
+        "body",
+        "div",
+        "h2",
+        "button"
+      ]
+    },
+    "recommendedTokens": [
+      "--color-background",
+      "--color-surface",
+      "--color-text-primary",
+      "--color-accent",
+      "--space-1",
+      "--space-2",
+      "--radius-sm",
+      "--radius-md"
+    ],
+    "accessibilityNotes": [
+      "Add or preserve a single h1 for page-level structure."
+    ]
+  }
+}

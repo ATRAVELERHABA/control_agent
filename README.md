@@ -89,3 +89,33 @@ The DuckDuckGo tool is implemented by `control_agent/scripts/duckduckgo_search_t
 - Install the dependency with `control_agent/.venv/Scripts/python -m pip install -r control_agent/requirements.txt`
 - The backend now prefers `control_agent/.venv/Scripts/python.exe` when it exists
 - The script prefers the renamed `ddgs` package and also supports the legacy `duckduckgo_search` import path
+
+## Offline License Activation
+
+The app ships with an offline activation gate:
+
+- On startup it checks the local license state first, then the local login session.
+- If no valid license exists, it stays on a dedicated license screen.
+- Importing a signed license file unlocks the login/register screen for the licensed account.
+
+### Demo flow (end-to-end)
+
+1. Start the desktop app:
+
+- `npm run tauri dev`
+
+2. Decide which account email should own the desktop license.
+
+3. Issue a license file with the repo CLI:
+
+- `cargo run --release --manifest-path license_tool/Cargo.toml -- issue --email "demo@example.com" --out "./demo-license.json"`
+
+4. Back in the app, click **Import License File** and select `demo-license.json`.
+5. Register or log in with the same email address.
+
+6. Restart the app: it should keep the local session until you manually sign out.
+
+### Reset / test cases
+
+- Use **Clear License** on the license screen to remove local license state.
+- If you edit any payload field in the license JSON, signature verification should fail and activation will be rejected.

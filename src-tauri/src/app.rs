@@ -4,6 +4,15 @@ use reqwest::Client;
 use tauri::AppHandle;
 
 use crate::{
+    activation::{
+        clear_license as clear_license_state, ensure_license_valid,
+        get_license_status as read_license_status, import_license as import_license_file,
+    },
+    auth::{
+        clear_session, ensure_authenticated, get_current_user as read_current_user,
+        get_session_status as read_session_status, login as login_local_account,
+        logout as logout_local_account, register_account as register_local_account,
+    },
     assets::register_asset as store_asset,
     audio::transcribe_audio,
     command_runner::execute_shell_command,
@@ -14,9 +23,10 @@ use crate::{
     logging::{log_error, log_info, preview_text},
     models::{
         AgentMode, AgentStreamEvent, AgentTurnRequest, AgentTurnResult, AnalyzeImageRequest,
-        AssetSummary, BackendModeStatuses, ConversationMessageDto, RegisterAssetRequest,
-        RunCommandRequest, RunDuckDuckGoSearchRequest, SkillSummary, TranscribeAudioRequest,
-        UpdateSkillEnabledRequest,
+        AssetSummary, BackendModeStatuses, ConversationMessageDto, CurrentUser, ImportLicenseRequest,
+        ImportLicenseResult, LicenseStatus, LoginRequest, RegisterAccountRequest,
+        RegisterAssetRequest, RunCommandRequest, RunDuckDuckGoSearchRequest, SessionStatus,
+        SkillSummary, TranscribeAudioRequest, UpdateSkillEnabledRequest,
     },
     search::execute_duckduckgo_search,
     skills::{load_skill_definitions, load_skill_summaries, set_skill_enabled},
@@ -25,7 +35,57 @@ use crate::{
 
 /// 读取两种后端模式的当前配置状态。
 #[tauri::command]
-fn get_backend_mode_statuses() -> Result<BackendModeStatuses, String> {
+fn get_license_status(app: AppHandle) -> Result<LicenseStatus, String> {
+    read_license_status(&app)
+}
+
+#[tauri::command]
+fn import_license(
+    app: AppHandle,
+    request: ImportLicenseRequest,
+) -> Result<ImportLicenseResult, String> {
+    import_license_file(&app, request)
+}
+
+#[tauri::command]
+fn clear_license(app: AppHandle) -> Result<LicenseStatus, String> {
+    clear_session(&app)?;
+    clear_license_state(&app)
+}
+
+#[tauri::command]
+fn get_session_status(app: AppHandle) -> Result<SessionStatus, String> {
+    read_session_status(&app)
+}
+
+#[tauri::command]
+fn register_account(
+    app: AppHandle,
+    request: RegisterAccountRequest,
+) -> Result<SessionStatus, String> {
+    ensure_license_valid(&app)?;
+    register_local_account(&app, request)
+}
+
+#[tauri::command]
+fn login(app: AppHandle, request: LoginRequest) -> Result<SessionStatus, String> {
+    login_local_account(&app, request)
+}
+
+#[tauri::command]
+fn logout(app: AppHandle) -> Result<SessionStatus, String> {
+    logout_local_account(&app)
+}
+
+#[tauri::command]
+fn get_current_user(app: AppHandle) -> Result<CurrentUser, String> {
+    read_current_user(&app)
+}
+
+#[tauri::command]
+fn get_backend_mode_statuses(app: AppHandle) -> Result<BackendModeStatuses, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     log_info("前端请求读取后端模式状态。");
     Ok(BackendModeStatuses {
         online: provider_status(AgentMode::Online),
@@ -35,14 +95,21 @@ fn get_backend_mode_statuses() -> Result<BackendModeStatuses, String> {
 
 /// 读取技能摘要列表。
 #[tauri::command]
-fn get_skill_summaries() -> Result<Vec<SkillSummary>, String> {
+fn get_skill_summaries(app: AppHandle) -> Result<Vec<SkillSummary>, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     log_info("前端请求读取技能列表。");
     Ok(load_skill_summaries())
 }
 
 /// 更新单个技能的启用状态。
 #[tauri::command]
-fn update_skill_enabled(request: UpdateSkillEnabledRequest) -> Result<SkillSummary, String> {
+fn update_skill_enabled(
+    app: AppHandle,
+    request: UpdateSkillEnabledRequest,
+) -> Result<SkillSummary, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     log_info(format!(
         "前端请求更新技能开关，id={}, enabled={}",
         request.skill_id, request.enabled
@@ -52,7 +119,9 @@ fn update_skill_enabled(request: UpdateSkillEnabledRequest) -> Result<SkillSumma
 
 /// 注册一份前端上传的附件，生成可供工具调用的 `asset_id`。
 #[tauri::command]
-fn register_asset(request: RegisterAssetRequest) -> Result<AssetSummary, String> {
+fn register_asset(app: AppHandle, request: RegisterAssetRequest) -> Result<AssetSummary, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     log_info(format!(
         "前端请求注册附件，file_name={}, mime_type={}, bytes={}",
         request.file_name,
@@ -68,6 +137,8 @@ async fn run_agent_turn(
     app: AppHandle,
     request: AgentTurnRequest,
 ) -> Result<AgentTurnResult, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     log_info(format!(
         "开始执行代理轮次，stream_id={}, mode={}, input_messages={}",
         request.stream_id,
@@ -183,25 +254,42 @@ async fn run_agent_turn(
 
 /// 执行一次 DuckDuckGo 搜索。
 #[tauri::command]
-async fn run_duckduckgo_search(request: RunDuckDuckGoSearchRequest) -> Result<String, String> {
+async fn run_duckduckgo_search(
+    app: AppHandle,
+    request: RunDuckDuckGoSearchRequest,
+) -> Result<String, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     execute_duckduckgo_search(request).await
 }
 
 /// 执行一次图像识别。
 #[tauri::command]
-async fn run_analyze_image(request: AnalyzeImageRequest) -> Result<String, String> {
+async fn run_analyze_image(
+    app: AppHandle,
+    request: AnalyzeImageRequest,
+) -> Result<String, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     analyze_image(request).await
 }
 
 /// 执行一次音频转写。
 #[tauri::command]
-async fn run_transcribe_audio(request: TranscribeAudioRequest) -> Result<String, String> {
+async fn run_transcribe_audio(
+    app: AppHandle,
+    request: TranscribeAudioRequest,
+) -> Result<String, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     transcribe_audio(request).await
 }
 
 /// 执行一次终端命令。
 #[tauri::command]
 async fn run_command(app: AppHandle, request: RunCommandRequest) -> Result<String, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
     execute_shell_command(&app, request).await
 }
 
@@ -213,6 +301,14 @@ pub fn run() {
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
+            get_license_status,
+            import_license,
+            clear_license,
+            get_session_status,
+            register_account,
+            login,
+            logout,
+            get_current_user,
             get_backend_mode_statuses,
             get_skill_summaries,
             update_skill_enabled,

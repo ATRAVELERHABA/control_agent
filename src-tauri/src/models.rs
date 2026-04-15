@@ -170,7 +170,64 @@ pub(crate) struct BackendModeStatuses {
     pub(crate) local: BackendModeStatus,
 }
 
-/// 单轮代理执行请求。
+/// 本地许可证状态。
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct LicenseStatus {
+    pub(crate) valid: bool,
+    pub(crate) message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) account_email: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) license_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) issued_at: Option<String>,
+    pub(crate) app_data_dir: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ImportLicenseRequest {
+    pub(crate) file_name: String,
+    pub(crate) contents: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ImportLicenseResult {
+    pub(crate) valid: bool,
+    pub(crate) status: LicenseStatus,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SessionStatus {
+    pub(crate) authenticated: bool,
+    pub(crate) message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) email: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CurrentUser {
+    pub(crate) email: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RegisterAccountRequest {
+    pub(crate) email: String,
+    pub(crate) password: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct LoginRequest {
+    pub(crate) email: String,
+    pub(crate) password: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AgentTurnRequest {

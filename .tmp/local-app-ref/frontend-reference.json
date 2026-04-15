@@ -1,0 +1,276 @@
+{
+  "meta": {
+    "url": "http://localhost:1420",
+    "title": "AI-Universal-Assistant",
+    "capturedAt": "2026-04-13T08:22:05.806Z",
+    "viewportSamples": {
+      "desktop": "1440x900",
+      "mobile": "390x844"
+    },
+    "pageType": "web-page",
+    "locale": "en"
+  },
+  "summary": {
+    "visualStyle": [
+      "minimal"
+    ],
+    "primaryLayout": "",
+    "notes": "web-page captured from a live page with 2 visible reference nodes."
+  },
+  "designTokens": {
+    "colors": {
+      "background": "#FFFFFF",
+      "surface": "",
+      "textPrimary": "#F8FAFC",
+      "textSecondary": "",
+      "border": "#E5E7EB",
+      "accent": "",
+      "palette": [
+        {
+          "value": "#E5E7EB",
+          "count": 2
+        }
+      ],
+      "customProperties": {
+        "--tw-ring-offset-shadow": "0 0 #0000",
+        "--tw-ring-shadow": "0 0 #0000",
+        "--tw-skew-x": "0",
+        "--tw-shadow": "0 0 #0000",
+        "--tw-translate-x": "0",
+        "--tw-ring-offset-width": "0px",
+        "--tw-scroll-snap-strictness": "proximity",
+        "--tw-border-spacing-x": "0",
+        "--tw-scale-x": "1",
+        "--tw-shadow-colored": "0 0 #0000",
+        "--tw-border-spacing-y": "0",
+        "--tw-scale-y": "1",
+        "--tw-skew-y": "0",
+        "--tw-ring-color": "rgb(59 130 246 / 0.5)",
+        "--tw-translate-y": "0",
+        "--tw-rotate": "0",
+        "--tw-ring-offset-color": "#fff"
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "base": "",
+        "heading": "",
+        "mono": ""
+      },
+      "fontSizes": {
+        "scale": []
+      },
+      "fontWeights": {
+        "scale": []
+      },
+      "lineHeights": {
+        "scale": []
+      },
+      "letterSpacings": {
+        "scale": []
+      }
+    },
+    "spacing": {
+      "scale": [],
+      "sectionGap": "",
+      "containerPaddingX": "0px",
+      "cardPadding": ""
+    },
+    "radius": {
+      "scale": []
+    },
+    "shadow": {
+      "card": "",
+      "overlay": "",
+      "scale": []
+    },
+    "border": {
+      "default": "",
+      "strong": ""
+    },
+    "motion": {
+      "durations": [],
+      "easings": [
+        "ease"
+      ]
+    },
+    "breakpoints": {
+      "sampled": {
+        "desktop": "1440px",
+        "mobile": "390px"
+      },
+      "detected": [
+        "640px",
+        "768px",
+        "1024px",
+        "1280px",
+        "1536px"
+      ]
+    }
+  },
+  "layout": {
+    "page": {
+      "structure": [],
+      "maxWidth": "1440px",
+      "scrollDirection": "vertical"
+    },
+    "containers": []
+  },
+  "components": [
+    {
+      "id": "cmp_container",
+      "sourcePath": "body[1]",
+      "name": "Container",
+      "role": "body",
+      "semanticTag": "body",
+      "purpose": "body",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": [
+        "cmp_container2"
+      ]
+    },
+    {
+      "id": "cmp_container2",
+      "sourcePath": "body[1]>div[1]",
+      "name": "Container2",
+      "role": "div",
+      "semanticTag": "div",
+      "purpose": "div",
+      "text": "",
+      "boundingBox": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      "layout": {
+        "display": "block",
+        "direction": "row",
+        "justifyContent": "normal",
+        "alignItems": "normal",
+        "gap": "normal",
+        "gridColumns": "none"
+      },
+      "style": {
+        "background": "",
+        "textColor": "#F8FAFC",
+        "padding": "0px",
+        "gap": "normal",
+        "borderRadius": "0px",
+        "border": "0px solid #E5E7EB",
+        "boxShadow": "",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "maxWidth": "none"
+      },
+      "children": []
+    }
+  ],
+  "componentTree": {
+    "root": "page_root",
+    "nodes": [
+      {
+        "id": "page_root",
+        "name": "PageRoot",
+        "children": [
+          "cmp_container"
+        ]
+      },
+      {
+        "id": "cmp_container",
+        "name": "Container",
+        "children": [
+          "cmp_container2"
+        ]
+      },
+      {
+        "id": "cmp_container2",
+        "name": "Container2",
+        "children": []
+      }
+    ]
+  },
+  "content": {
+    "headings": [],
+    "buttons": [],
+    "links": []
+  },
+  "assets": {
+    "images": [],
+    "icons": []
+  },
+  "responsive": {
+    "mediaQueries": [
+      "(min-width: 640px)",
+      "(min-width: 768px)",
+      "(min-width: 1024px)",
+      "(min-width: 1280px)",
+      "(min-width: 1536px)"
+    ],
+    "strategies": [
+      {
+        "componentId": "cmp_container",
+        "rule": "Container compresses significantly at mobile width"
+      },
+      {
+        "componentId": "cmp_container2",
+        "rule": "Container2 compresses significantly at mobile width"
+      }
+    ]
+  },
+  "implementationHints": {
+    "frameworkMapping": {
+      "react": [
+        "Container",
+        "Container2"
+      ],
+      "vue": [
+        "Container",
+        "Container2"
+      ],
+      "html": [
+        "body",
+        "div"
+      ]
+    },
+    "recommendedTokens": [
+      "--color-background",
+      "--color-surface",
+      "--color-text-primary",
+      "--color-accent",
+      "--space-1",
+      "--space-2",
+      "--radius-sm",
+      "--radius-md"
+    ],
+    "accessibilityNotes": [
+      "Add or preserve a single h1 for page-level structure."
+    ]
+  }
+}
