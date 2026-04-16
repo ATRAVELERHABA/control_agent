@@ -1,23 +1,26 @@
 {
   "id": "execute-terminal-command",
   "name": "终端命令执行",
-  "description": "允许模型请求在用户当前操作系统终端执行命令。",
+  "description": "允许模型请求在用户当前机器上执行终端命令。在 Windows 上，命令实际运行于 PowerShell 而不是 cmd.exe。",
   "type": "tool",
   "enabled": true,
+  "instruction": null,
   "tool": {
     "name": "execute_terminal_command",
-    "description": "在用户的操作系统终端执行自定义指令",
-    "requires_confirmation": true,
+    "description": "在用户操作系统终端中执行完整命令。在 Windows 上该工具运行于 PowerShell，因此应使用 PowerShell 语法，而不是 && 或 cd /d 这类仅适用于 cmd.exe 的语法。",
     "parameters": {
-      "type": "object",
+      "additionalProperties": false,
       "properties": {
         "command": {
-          "type": "string",
-          "description": "需要在用户本地终端执行的完整命令字符串"
+          "description": "要在用户本地终端执行的完整命令字符串。在 Windows 上请使用 PowerShell 语法，在 Linux 或 macOS 上请使用 bash 语法。",
+          "type": "string"
         }
       },
-      "required": ["command"],
-      "additionalProperties": false
-    }
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "requires_confirmation": false
   }
 }

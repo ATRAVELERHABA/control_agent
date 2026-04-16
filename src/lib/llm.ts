@@ -116,6 +116,23 @@ export interface CurrentUser {
   email: string;
 }
 
+export interface DingTalkLogEntry {
+  timestamp: string;
+  level: string;
+  message: string;
+}
+
+export interface DingTalkStatus {
+  configured: boolean;
+  running: boolean;
+  mode: AgentMode;
+  message: string;
+  remoteCommandsEnabled: boolean;
+  allowedSenderCount: number;
+  allowedChatCount: number;
+  events: DingTalkLogEntry[];
+}
+
 export interface RegisterAccountRequest {
   email: string;
   password: string;
@@ -133,6 +150,19 @@ export interface SkillSummary {
   skillType: SkillType;
   enabled: boolean;
   requiresConfirmation: boolean;
+}
+
+export interface UpdateSkillRequiresConfirmationRequest {
+  skillId: string;
+  requiresConfirmation: boolean;
+}
+
+export interface SystemPromptSettings {
+  customPrompt: string;
+}
+
+export interface UpdateSystemPromptSettingsRequest {
+  customPrompt: string;
 }
 
 export type AgentStreamEvent =
@@ -188,8 +218,8 @@ export const MODE_LABELS: Record<AgentMode, string> = {
 };
 
 export const MODE_DESCRIPTIONS: Record<AgentMode, string> = {
-  online: "从后端环境变量读取 OPENAI_* 配置，请求在线 OpenAI-compatible 接口。",
-  local: "从后端环境变量读取 OLLAMA_* 配置，请求本地 Ollama 的 OpenAI-compatible 端点。",
+  online: "从后端环境变量读取 OPENAI_* 配置，请求在线兼容 OpenAI 的接口。",
+  local: "从后端环境变量读取 OLLAMA_* 配置，请求本地 Ollama 的兼容 OpenAI 端点。",
 };
 
 export const STREAM_EVENT_NAME = "agent-stream";

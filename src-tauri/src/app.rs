@@ -17,19 +17,32 @@ use crate::{
     audio::transcribe_audio,
     command_runner::execute_shell_command,
     constants::TOOL_NAME,
+    dingtalk::{
+        get_status as read_dingtalk_status, start_service as start_dingtalk_service,
+        stop_service as stop_dingtalk_service,
+    },
     env::{load_backend_env_once, load_provider_config, provider_status},
     events::emit_stream_event,
     llm::{parse_tool_command, stream_chat_completion},
     logging::{log_error, log_info, preview_text},
     models::{
         AgentMode, AgentStreamEvent, AgentTurnRequest, AgentTurnResult, AnalyzeImageRequest,
-        AssetSummary, BackendModeStatuses, ConversationMessageDto, CurrentUser, ImportLicenseRequest,
-        ImportLicenseResult, LicenseStatus, LoginRequest, RegisterAccountRequest,
-        RegisterAssetRequest, RunCommandRequest, RunDuckDuckGoSearchRequest, SessionStatus,
-        SkillSummary, TranscribeAudioRequest, UpdateSkillEnabledRequest,
+        AssetSummary, BackendModeStatuses, ConversationMessageDto, CurrentUser, DingTalkStatus,
+        ImportLicenseRequest, ImportLicenseResult, LicenseStatus, LoginRequest,
+        RegisterAccountRequest, RegisterAssetRequest, RunCommandRequest,
+        RunDuckDuckGoSearchRequest, SessionStatus, SkillSummary, SystemPromptSettings,
+        TranscribeAudioRequest, UpdateSkillEnabledRequest,
+        UpdateSkillRequiresConfirmationRequest, UpdateSystemPromptSettingsRequest,
     },
     search::execute_duckduckgo_search,
-    skills::{load_skill_definitions, load_skill_summaries, set_skill_enabled},
+    settings::{
+        get_system_prompt_settings as read_system_prompt_settings,
+        update_system_prompt_settings as write_system_prompt_settings,
+    },
+    skills::{
+        load_skill_definitions, load_skill_summaries, set_skill_enabled,
+        set_skill_requires_confirmation,
+    },
     vision::analyze_image,
 };
 
@@ -83,6 +96,25 @@ fn get_current_user(app: AppHandle) -> Result<CurrentUser, String> {
 }
 
 #[tauri::command]
+fn get_dingtalk_status(app: AppHandle) -> Result<DingTalkStatus, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    Ok(read_dingtalk_status())
+}
+
+#[tauri::command]
+async fn start_dingtalk_bot(app: AppHandle) -> Result<DingTalkStatus, String> {
+    start_dingtalk_service(&app).await
+}
+
+#[tauri::command]
+async fn stop_dingtalk_bot(app: AppHandle) -> Result<DingTalkStatus, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    stop_dingtalk_service().await
+}
+
+#[tauri::command]
 fn get_backend_mode_statuses(app: AppHandle) -> Result<BackendModeStatuses, String> {
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
@@ -117,7 +149,43 @@ fn update_skill_enabled(
     set_skill_enabled(&request.skill_id, request.enabled)
 }
 
+#[tauri::command]
+fn update_skill_requires_confirmation(
+    app: AppHandle,
+    request: UpdateSkillRequiresConfirmationRequest,
+) -> Result<SkillSummary, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    log_info(format!(
+        "前端请求更新技能确认要求，id={}, requires_confirmation={}",
+        request.skill_id, request.requires_confirmation
+    ));
+    set_skill_requires_confirmation(&request.skill_id, request.requires_confirmation)
+}
+
 /// 注册一份前端上传的附件，生成可供工具调用的 `asset_id`。
+#[tauri::command]
+fn get_system_prompt_settings(app: AppHandle) -> Result<SystemPromptSettings, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    log_info("前端请求读取系统提示词设置。");
+    read_system_prompt_settings(&app)
+}
+
+#[tauri::command]
+fn update_system_prompt_settings(
+    app: AppHandle,
+    request: UpdateSystemPromptSettingsRequest,
+) -> Result<SystemPromptSettings, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    log_info(format!(
+        "前端请求更新系统提示词设置，chars={}",
+        request.custom_prompt.chars().count()
+    ));
+    write_system_prompt_settings(&app, request)
+}
+
 #[tauri::command]
 fn register_asset(app: AppHandle, request: RegisterAssetRequest) -> Result<AssetSummary, String> {
     ensure_license_valid(&app)?;
@@ -309,9 +377,15 @@ pub fn run() {
             login,
             logout,
             get_current_user,
+            get_dingtalk_status,
+            start_dingtalk_bot,
+            stop_dingtalk_bot,
             get_backend_mode_statuses,
             get_skill_summaries,
             update_skill_enabled,
+            update_skill_requires_confirmation,
+            get_system_prompt_settings,
+            update_system_prompt_settings,
             register_asset,
             run_agent_turn,
             run_duckduckgo_search,

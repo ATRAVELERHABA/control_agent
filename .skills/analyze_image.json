@@ -1,30 +1,32 @@
 {
   "id": "analyze-image",
-  "name": "图像识别",
-  "description": "允许模型分析用户上传、拖拽或粘贴到对话中的图片附件，输出图像内容、界面布局与 OCR 文本。",
+  "name": "图像分析",
+  "description": "允许模型分析上传、拖拽或粘贴到对话中的图像附件，包括文字识别和界面布局理解。",
   "type": "tool",
   "enabled": true,
   "tool": {
     "name": "analyze_image",
-    "description": "分析已注册的图片附件。适用于识别截图、照片、图表、界面结构和图片中的文字。",
+    "description": "分析已注册的图像附件。适用于截图、照片、图表、界面结构以及图片中的文字提取。",
     "requires_confirmation": false,
     "parameters": {
       "type": "object",
       "properties": {
         "assetId": {
           "type": "string",
-          "description": "需要分析的图片附件 asset_id。"
+          "description": "要分析的已注册图像附件资源 ID。"
         },
         "task": {
           "type": "string",
-          "description": "可选的额外分析要求，例如只提取文字、只解释图表等。"
+          "description": "可选的额外分析指令，例如仅做文字识别或仅解析图表。"
         },
         "ocr": {
           "type": "boolean",
-          "description": "是否强化 OCR 输出，默认 false。"
+          "description": "是否显式要求输出偏向文字识别结果，默认值为 false。"
         }
       },
-      "required": ["assetId"],
+      "required": [
+        "assetId"
+      ],
       "additionalProperties": false
     }
   }

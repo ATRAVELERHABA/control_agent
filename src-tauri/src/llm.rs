@@ -111,10 +111,11 @@ fn frontend_message_to_openai_value(message: &ConversationMessageDto) -> Result<
 
 /// 构建最终发送给模型的消息列表。
 fn build_openai_messages(
+    app: &AppHandle,
     messages: &[ConversationMessageDto],
     skills: &[SkillDefinition],
 ) -> Result<Vec<Value>, String> {
-    let system_prompt = build_runtime_environment_prompt(skills);
+    let system_prompt = build_runtime_environment_prompt(app, skills);
     log_info(format!(
         "已注入系统环境提示词，preview={}",
         preview_text(&system_prompt, 240)
@@ -398,7 +399,7 @@ pub(crate) async fn stream_chat_completion(
             "model": config.model,
             "stream": true,
             "tool_choice": "auto",
-            "messages": build_openai_messages(messages, skills)?,
+            "messages": build_openai_messages(app, messages, skills)?,
             "tools": openai_tools_payload(skills),
         }))
         .send()

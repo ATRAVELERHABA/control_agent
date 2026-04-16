@@ -1,8 +1,8 @@
 {
   "id": "safe-terminal-gateway",
   "name": "安全终端网关",
-  "description": "提醒模型终端能力受前端确认控制，避免无必要命令调用。",
+  "description": "提醒模型：终端访问通常需要用户确认，除非已经明确开启直接执行。",
   "type": "prompt",
   "enabled": true,
-  "instruction": "在需要读取环境、验证系统信息、执行安装命令或运行脚本时才调用 execute_terminal_command。调用前尽量先说明目的。所有终端命令都需要用户在前端确认，禁止假设命令已经执行。"
+  "instruction": "仅在确实需要检查环境、验证系统状态、安装依赖或运行脚本时才使用 execute_terminal_command。可以的话先说明用途。终端命令通常需要用户显式确认，除非用户已经开启直接执行。在 Windows 上，execute_terminal_command 运行于 PowerShell 而不是 cmd.exe，因此应使用 Set-Location、分号或换行等 PowerShell 语法串联步骤，并避免使用 &&、|| 或 cd /d 这类仅适用于 cmd.exe 的分隔写法。绝不要假装某条命令已经执行过。"
 }

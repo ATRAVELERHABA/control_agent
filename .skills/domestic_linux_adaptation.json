@@ -1,8 +1,8 @@
 {
   "id": "domestic-linux-adaptation",
   "name": "国产 Linux 适配",
-  "description": "帮助模型更稳地理解 UOS、麒麟等国产 Linux 系统环境。",
+  "description": "帮助模型正确理解 UOS、Kylin、统信等国产 Linux 环境。",
   "type": "prompt",
   "enabled": true,
-  "instruction": "如果系统环境显示为 UOS、麒麟、统信、银河麒麟或其他国产 Linux 发行版，优先使用对应的 Linux 目录结构、包管理习惯和 shell 命令理解问题，不要默认按 Windows 处理。"
+  "instruction": "如果环境看起来像 UOS、Kylin、统信、银河麒麟或其他国产 Linux 发行版，请优先遵循该平台的文件系统布局、包管理器和 shell 约定，而不要默认按 Windows 的行为推断。"
 }

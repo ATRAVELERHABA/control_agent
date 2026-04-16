@@ -214,6 +214,33 @@ pub(crate) struct CurrentUser {
     pub(crate) email: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DingTalkLogEntry {
+    pub(crate) timestamp: String,
+    pub(crate) level: String,
+    pub(crate) message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DingTalkStatus {
+    pub(crate) configured: bool,
+    pub(crate) running: bool,
+    pub(crate) mode: AgentMode,
+    pub(crate) message: String,
+    pub(crate) remote_commands_enabled: bool,
+    pub(crate) allowed_sender_count: usize,
+    pub(crate) allowed_chat_count: usize,
+    pub(crate) events: Vec<DingTalkLogEntry>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SystemPromptSettings {
+    pub(crate) custom_prompt: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RegisterAccountRequest {
@@ -345,6 +372,19 @@ pub(crate) struct UpdateSkillEnabledRequest {
 }
 
 /// 单轮代理执行完成后返回给前端的新消息集合。
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct UpdateSkillRequiresConfirmationRequest {
+    pub(crate) skill_id: String,
+    pub(crate) requires_confirmation: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct UpdateSystemPromptSettingsRequest {
+    pub(crate) custom_prompt: String,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AgentTurnResult {

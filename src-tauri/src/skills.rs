@@ -1,4 +1,4 @@
-//! 负责本地技能声明的发现、加载与启用状态维护。
+//! Local skill discovery, loading, and enablement.
 
 use std::{
     env, fs,
@@ -6,21 +6,17 @@ use std::{
 };
 
 use crate::{
-    constants::SKILLS_DIR_NAME,
+    constants::{SKILLS_DIR_NAME, TOOL_NAME},
     logging::{log_error, log_info},
     models::{SkillDefinition, SkillSummary, SkillType},
 };
 
-/// 记录技能定义文件在磁盘中的位置及其解析结果。
 #[derive(Debug, Clone)]
 struct SkillRecord {
-    /// 技能定义文件路径。
     path: PathBuf,
-    /// 解析后的技能定义。
     definition: SkillDefinition,
 }
 
-/// 解析项目中的 `.skills` 目录位置。
 pub(crate) fn project_skills_dir() -> Option<PathBuf> {
     let mut candidates = Vec::<PathBuf>::new();
 
@@ -62,7 +58,6 @@ pub(crate) fn project_skills_dir() -> Option<PathBuf> {
     candidates.into_iter().next()
 }
 
-/// 生成项目根目录候选集合，供脚本和虚拟环境查找复用。
 pub(crate) fn project_root_candidates() -> Vec<PathBuf> {
     let mut candidates = Vec::<PathBuf>::new();
 
@@ -106,7 +101,6 @@ pub(crate) fn project_root_candidates() -> Vec<PathBuf> {
     candidates
 }
 
-/// 从单个技能文件中解析技能定义。
 fn load_skill_from_file(path: &Path) -> Option<SkillDefinition> {
     let contents = fs::read_to_string(path).ok()?;
 
@@ -114,7 +108,7 @@ fn load_skill_from_file(path: &Path) -> Option<SkillDefinition> {
         Ok(skill) => Some(skill),
         Err(error) => {
             log_error(format!(
-                "解析技能文件失败，path={}, error={error}",
+                "Failed to parse skill file, path={}, error={error}",
                 path.display()
             ));
             None
@@ -122,18 +116,17 @@ fn load_skill_from_file(path: &Path) -> Option<SkillDefinition> {
     }
 }
 
-/// 加载磁盘上的所有技能记录。
 fn load_all_skill_records() -> Vec<SkillRecord> {
     let Some(skills_dir) = project_skills_dir() else {
-        log_error("无法确定当前工作目录，跳过 .skills 读取。");
+        log_error("Could not resolve the .skills directory.");
         return Vec::new();
     };
 
-    log_info(format!("skills 目录候选已解析为：{}", skills_dir.display()));
+    log_info(format!("Resolved skills directory candidate: {}", skills_dir.display()));
 
     if !skills_dir.exists() {
         log_info(format!(
-            "未找到 skills 目录：{}，当前不加载额外技能。",
+            "No .skills directory found at {}; no extra skills will be loaded.",
             skills_dir.display()
         ));
         return Vec::new();
@@ -153,7 +146,7 @@ fn load_all_skill_records() -> Vec<SkillRecord> {
             .collect::<Vec<_>>(),
         Err(error) => {
             log_error(format!(
-                "读取 skills 目录失败，path={}, error={error}",
+                "Failed to read skills directory, path={}, error={error}",
                 skills_dir.display()
             ));
             return Vec::new();
@@ -173,7 +166,7 @@ fn load_all_skill_records() -> Vec<SkillRecord> {
         .collect::<Vec<_>>();
 
     log_info(format!(
-        "已加载 {} 个技能：{}",
+        "Loaded {} skills: {}",
         records.len(),
         if records.is_empty() {
             "(none)".to_string()
@@ -189,7 +182,6 @@ fn load_all_skill_records() -> Vec<SkillRecord> {
     records
 }
 
-/// 将完整技能定义转换为前端展示摘要。
 fn to_skill_summary(skill: &SkillDefinition) -> SkillSummary {
     SkillSummary {
         id: skill.id.clone(),
@@ -205,7 +197,18 @@ fn to_skill_summary(skill: &SkillDefinition) -> SkillSummary {
     }
 }
 
-/// 读取所有技能摘要，供前端技能面板使用。
+fn write_skill_record(record: &SkillRecord) -> Result<(), String> {
+    let serialized = serde_json::to_string_pretty(&record.definition)
+        .map_err(|error| format!("Failed to serialize skill file: {error}"))?;
+
+    fs::write(&record.path, format!("{serialized}\n")).map_err(|error| {
+        format!(
+            "Failed to write skill file, path={}, error={error}",
+            record.path.display()
+        )
+    })
+}
+
 pub(crate) fn load_skill_summaries() -> Vec<SkillSummary> {
     load_all_skill_records()
         .into_iter()
@@ -213,7 +216,6 @@ pub(crate) fn load_skill_summaries() -> Vec<SkillSummary> {
         .collect()
 }
 
-/// 读取所有已启用的技能定义，供模型执行时使用。
 pub(crate) fn load_skill_definitions() -> Vec<SkillDefinition> {
     load_all_skill_records()
         .into_iter()
@@ -222,28 +224,19 @@ pub(crate) fn load_skill_definitions() -> Vec<SkillDefinition> {
         .collect()
 }
 
-/// 更新某个技能的启用状态并回写到磁盘。
 pub(crate) fn set_skill_enabled(skill_id: &str, enabled: bool) -> Result<SkillSummary, String> {
     let mut records = load_all_skill_records();
     let record = records
         .iter_mut()
         .find(|record| record.definition.id == skill_id)
-        .ok_or_else(|| format!("未找到技能：{skill_id}"))?;
+        .ok_or_else(|| format!("Skill not found: {skill_id}"))?;
 
     record.definition.enabled = enabled;
 
-    let serialized = serde_json::to_string_pretty(&record.definition)
-        .map_err(|error| format!("序列化技能文件失败：{error}"))?;
-
-    fs::write(&record.path, format!("{serialized}\n")).map_err(|error| {
-        format!(
-            "写入技能文件失败，path={}, error={error}",
-            record.path.display()
-        )
-    })?;
+    write_skill_record(record)?;
 
     log_info(format!(
-        "技能状态已更新，id={}, enabled={}, path={}",
+        "Updated skill state, id={}, enabled={}, path={}",
         record.definition.id,
         record.definition.enabled,
         record.path.display()
@@ -252,28 +245,73 @@ pub(crate) fn set_skill_enabled(skill_id: &str, enabled: bool) -> Result<SkillSu
     Ok(to_skill_summary(&record.definition))
 }
 
-/// 生成提示型技能的系统提示词片段。
+pub(crate) fn set_skill_requires_confirmation(
+    skill_id: &str,
+    requires_confirmation: bool,
+) -> Result<SkillSummary, String> {
+    let mut records = load_all_skill_records();
+    let record = records
+        .iter_mut()
+        .find(|record| record.definition.id == skill_id)
+        .ok_or_else(|| format!("Skill not found: {skill_id}"))?;
+
+    let tool = record
+        .definition
+        .tool
+        .as_mut()
+        .ok_or_else(|| format!("Skill does not expose a configurable tool: {skill_id}"))?;
+
+    tool.requires_confirmation = requires_confirmation;
+    let updated_requires_confirmation = tool.requires_confirmation;
+    write_skill_record(record)?;
+
+    log_info(format!(
+        "Updated skill confirmation requirement, id={}, requires_confirmation={}, path={}",
+        record.definition.id,
+        updated_requires_confirmation,
+        record.path.display()
+    ));
+
+    Ok(to_skill_summary(&record.definition))
+}
+
+pub(crate) fn terminal_command_requires_confirmation() -> bool {
+    load_all_skill_records()
+        .into_iter()
+        .find_map(|record| {
+            record
+                .definition
+                .tool
+                .as_ref()
+                .filter(|tool| tool.name == TOOL_NAME)
+                .map(|tool| tool.requires_confirmation)
+        })
+        .unwrap_or(true)
+}
+
 pub(crate) fn build_prompt_skill_section(skills: &[SkillDefinition]) -> String {
     let sections = skills
         .iter()
         .filter(|skill| matches!(skill.skill_type, SkillType::Prompt))
         .map(|skill| {
-            let instruction = skill.instruction.as_deref().unwrap_or("未提供额外指令。");
+            let instruction = skill
+                .instruction
+                .as_deref()
+                .unwrap_or("No additional instruction provided.");
             format!(
-                "- 技能名称: {}\n  描述: {}\n  指令: {}",
+                "- Skill name: {}\n  Description: {}\n  Instruction: {}",
                 skill.name, skill.description, instruction
             )
         })
         .collect::<Vec<_>>();
 
     if sections.is_empty() {
-        "当前未加载额外的提示型技能。".to_string()
+        "No extra prompt skills are currently loaded.".to_string()
     } else {
         sections.join("\n")
     }
 }
 
-/// 生成工具型技能的系统提示词片段。
 pub(crate) fn build_tool_skill_section(skills: &[SkillDefinition]) -> String {
     let sections = skills
         .iter()
@@ -281,22 +319,18 @@ pub(crate) fn build_tool_skill_section(skills: &[SkillDefinition]) -> String {
         .filter_map(|skill| {
             skill.tool.as_ref().map(|tool| {
                 format!(
-                    "- 技能名称: {}\n  工具名: {}\n  描述: {}\n  需要确认: {}",
+                    "- Skill name: {}\n  Tool name: {}\n  Description: {}\n  Requires confirmation: {}",
                     skill.name,
                     tool.name,
                     tool.description,
-                    if tool.requires_confirmation {
-                        "是"
-                    } else {
-                        "否"
-                    }
+                    if tool.requires_confirmation { "yes" } else { "no" }
                 )
             })
         })
         .collect::<Vec<_>>();
 
     if sections.is_empty() {
-        "当前未加载额外的工具型技能。".to_string()
+        "No extra tool skills are currently loaded.".to_string()
     } else {
         sections.join("\n")
     }

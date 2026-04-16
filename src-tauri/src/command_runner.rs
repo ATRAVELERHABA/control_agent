@@ -38,6 +38,16 @@ fn encode_powershell_command(command: &str) -> String {
     STANDARD.encode(utf16_bytes)
 }
 
+#[cfg(target_os = "windows")]
+fn should_use_cmd_shell(command: &str) -> bool {
+    let lowered = command.to_ascii_lowercase();
+
+    command.contains("&&")
+        || command.contains("||")
+        || lowered.starts_with("cd /d ")
+        || lowered.contains(" cd /d ")
+}
+
 /// 尝试按多种编码规则将命令输出字节解码为文本。
 pub(crate) fn decode_command_output(bytes: &[u8]) -> String {
     if bytes.is_empty() {
@@ -147,14 +157,33 @@ pub(crate) async fn execute_shell_command(
     ));
 
     let mut child = if cfg!(target_os = "windows") {
-        let encoded_command = encode_powershell_command(&command);
+        #[cfg(target_os = "windows")]
+        {
+            if should_use_cmd_shell(&command) {
+                log_info(format!(
+                    "Detected cmd.exe style command on Windows; using cmd.exe compatibility mode, command={}",
+                    preview_text(&command, 200)
+                ));
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-NoProfile")
-            .arg("-NonInteractive")
-            .arg("-EncodedCommand")
-            .arg(encoded_command);
-        cmd
+                let mut cmd = Command::new("cmd");
+                cmd.arg("/d").arg("/s").arg("/c").arg(&command);
+                cmd
+            } else {
+                let encoded_command = encode_powershell_command(&command);
+
+                let mut cmd = Command::new("powershell");
+                cmd.arg("-NoProfile")
+                    .arg("-NonInteractive")
+                    .arg("-OutputFormat")
+                    .arg("Text")
+                    .arg("-EncodedCommand")
+                    .arg(encoded_command);
+                cmd
+            }
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        unreachable!()
     } else if cfg!(target_os = "linux") || cfg!(target_os = "macos") {
         let mut cmd = Command::new("bash");
         cmd.arg("-c").arg(&command);

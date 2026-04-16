@@ -119,3 +119,41 @@ The app ships with an offline activation gate:
 
 - Use **Clear License** on the license screen to remove local license state.
 - If you edit any payload field in the license JSON, signature verification should fail and activation will be rejected.
+
+## DingTalk Remote Relay
+
+The project now includes an experimental DingTalk Stream Mode relay so the desktop agent can be reached from DingTalk group chats and direct chats.
+
+### Install Python dependencies
+
+- Create a local virtualenv: `python -m venv control_agent/.venv`
+- Install helper dependencies: `control_agent/.venv/Scripts/python -m pip install -r control_agent/requirements.txt`
+
+### Required `.env` values
+
+- `DINGTALK_CLIENT_ID`
+- `DINGTALK_CLIENT_SECRET`
+
+### Optional `.env` values
+
+- `DINGTALK_AGENT_MODE=online|local`
+- `DINGTALK_ALLOWED_SENDERS=user1,user2`
+- `DINGTALK_ALLOWED_CHATS=chat1,chat2`
+- `DINGTALK_ENABLE_REMOTE_COMMANDS=true|false`
+- `DINGTALK_ALLOWED_COMMAND_PREFIXES=dir,Get-ChildItem,pwd`
+
+### Current remote commands
+
+- `/help`
+- `/status`
+- `/mode online`
+- `/mode local`
+- `/clear`
+- `/run <command>`
+
+### Current limitations
+
+- This first slice only supports text chat and text command replies.
+- `/run` is intentionally disabled unless `DINGTALK_ENABLE_REMOTE_COMMANDS=true`.
+- Even after enabling `/run`, commands are still gated by `DINGTALK_ALLOWED_COMMAND_PREFIXES`.
+- Remote chat currently exposes only non-confirmation tools to the model. Terminal execution is not exposed through autonomous tool-calling in DingTalk.

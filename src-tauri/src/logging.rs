@@ -1,8 +1,7 @@
-//! 提供统一的日志输出与文本预览工具。
+//! Unified backend logging helpers.
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// 生成当前毫秒级时间戳，用于日志打点。
 pub(crate) fn timestamp_ms() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -10,17 +9,18 @@ pub(crate) fn timestamp_ms() -> u128 {
         .unwrap_or(0)
 }
 
-/// 输出普通信息日志。
 pub(crate) fn log_info(message: impl AsRef<str>) {
     println!("[agent][{}] {}", timestamp_ms(), message.as_ref());
 }
 
-/// 输出错误级别日志。
+pub(crate) fn log_warn(message: impl AsRef<str>) {
+    println!("[agent][{}][warn] {}", timestamp_ms(), message.as_ref());
+}
+
 pub(crate) fn log_error(message: impl AsRef<str>) {
     eprintln!("[agent][{}][error] {}", timestamp_ms(), message.as_ref());
 }
 
-/// 生成文本预览，避免日志里打印完整长文本。
 pub(crate) fn preview_text(text: &str, max_chars: usize) -> String {
     let trimmed = text.trim();
     let mut preview = trimmed.chars().take(max_chars).collect::<String>();
@@ -36,7 +36,6 @@ pub(crate) fn preview_text(text: &str, max_chars: usize) -> String {
     }
 }
 
-/// 对密钥做脱敏展示，避免日志泄漏完整凭证。
 pub(crate) fn redact_secret(secret: &str) -> String {
     if secret.is_empty() {
         return "(empty)".to_string();

@@ -1,30 +1,32 @@
 {
   "id": "transcribe-audio",
   "name": "音频转写",
-  "description": "允许模型转写用户上传或拖拽到对话中的音频附件，输出识别后的文本内容。",
+  "description": "允许模型转写上传或拖拽到对话中的音频附件。",
   "type": "tool",
   "enabled": true,
   "tool": {
     "name": "transcribe_audio",
-    "description": "转写已注册的音频附件。适用于会议录音、语音备忘、播客片段等音频内容识别。",
+    "description": "转写已注册的音频附件。适用于会议录音、语音备忘、播客以及其他以语音为主的音频内容。",
     "requires_confirmation": false,
     "parameters": {
       "type": "object",
       "properties": {
         "assetId": {
           "type": "string",
-          "description": "需要转写的音频附件 asset_id。"
+          "description": "要转写的已注册音频附件资源 ID。"
         },
         "language": {
           "type": "string",
-          "description": "可选语言提示，例如 zh、en。"
+          "description": "可选的语言提示，例如 zh 或 en。"
         },
         "prompt": {
           "type": "string",
-          "description": "可选转写提示词，用于帮助识别专有名词或上下文。"
+          "description": "可选的转写提示词，可帮助识别专业术语或专有名词。"
         }
       },
-      "required": ["assetId"],
+      "required": [
+        "assetId"
+      ],
       "additionalProperties": false
     }
   }

@@ -1,4 +1,4 @@
-//! 提供 Python 解释器发现与脚本执行能力。
+//! Python interpreter discovery and helper process launching.
 
 use std::{
     io::ErrorKind,
@@ -6,20 +6,16 @@ use std::{
     process::Stdio,
 };
 
-use tokio::process::Command;
+use tokio::process::{Child, Command};
 
 use crate::{command_runner::decode_command_output, skills::project_root_candidates};
 
-/// 描述一个可尝试的 Python 解释器候选项。
 #[derive(Clone)]
 struct PythonCommandCandidate {
-    /// Python 程序路径或命令名。
     program: String,
-    /// 启动解释器前需要附加的前置参数。
     prefix_args: Vec<String>,
 }
 
-/// 查找项目内虚拟环境的 Python 可执行文件。
 fn project_virtualenv_python() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     let relative_path = PathBuf::from("control_agent/.venv/Scripts/python.exe");
@@ -33,7 +29,6 @@ fn project_virtualenv_python() -> Option<PathBuf> {
         .find(|candidate| candidate.exists())
 }
 
-/// 构建当前平台可用的 Python 解释器候选列表。
 fn python_command_candidates() -> Vec<PythonCommandCandidate> {
     let mut candidates = Vec::<PythonCommandCandidate>::new();
 
@@ -71,7 +66,6 @@ fn python_command_candidates() -> Vec<PythonCommandCandidate> {
     candidates
 }
 
-/// 使用可用的 Python 解释器执行指定脚本。
 pub(crate) async fn run_python_script(
     script_path: &Path,
     args: &[String],
@@ -96,27 +90,61 @@ pub(crate) async fn run_python_script(
 
                 last_error = Some(if stderr.is_empty() {
                     format!(
-                        "Python 脚本执行失败，program={}, status={}",
+                        "Python script failed, program={}, status={}",
                         candidate.program, output.status
                     )
                 } else {
                     format!(
-                        "Python 脚本执行失败，program={}, stderr={stderr}",
+                        "Python script failed, program={}, stderr={stderr}",
                         candidate.program
                     )
                 });
             }
             Err(error) if error.kind() == ErrorKind::NotFound => {
-                last_error = Some(format!("未找到 Python 解释器：{}", candidate.program));
+                last_error = Some(format!("Python interpreter not found: {}", candidate.program));
             }
             Err(error) => {
                 last_error = Some(format!(
-                    "启动 Python 脚本失败，program={}, error={error}",
+                    "Failed to start Python script, program={}, error={error}",
                     candidate.program
                 ));
             }
         }
     }
 
-    Err(last_error.unwrap_or_else(|| "无法执行 Python 脚本。".to_string()))
+    Err(last_error.unwrap_or_else(|| "Unable to execute Python script.".to_string()))
+}
+
+pub(crate) async fn start_python_script(
+    script_path: &Path,
+    args: &[String],
+) -> Result<Child, String> {
+    let mut last_error = None;
+
+    for candidate in python_command_candidates() {
+        let mut command = Command::new(&candidate.program);
+        command.args(&candidate.prefix_args);
+        command.arg("-u");
+        command.arg(script_path);
+        command.args(args);
+        command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        match command.spawn() {
+            Ok(child) => return Ok(child),
+            Err(error) if error.kind() == ErrorKind::NotFound => {
+                last_error = Some(format!("Python interpreter not found: {}", candidate.program));
+            }
+            Err(error) => {
+                last_error = Some(format!(
+                    "Failed to start Python script, program={}, error={error}",
+                    candidate.program
+                ));
+            }
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| "Unable to start Python script.".to_string()))
 }

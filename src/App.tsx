@@ -15,6 +15,7 @@ import {
   PaperClipOutlined,
   RobotOutlined,
   SendOutlined,
+  SettingOutlined,
   ThunderboltOutlined,
   WarningFilled,
 } from "@ant-design/icons";
@@ -56,6 +57,7 @@ import {
   type BackendModeStatuses,
   type ConversationMessage,
   type CurrentUser,
+  type DingTalkStatus,
   type ImportLicenseRequest,
   type ImportLicenseResult,
   type LicenseStatus,
@@ -68,8 +70,11 @@ import {
   type RunAgentTurnResult,
   type SessionStatus,
   type SkillSummary,
+  type SystemPromptSettings,
   type ToolFunctionCall,
   type TranscribeAudioRequest,
+  type UpdateSkillRequiresConfirmationRequest,
+  type UpdateSystemPromptSettingsRequest,
 } from "./lib/llm";
 
 const { Sider, Content } = Layout;
@@ -84,7 +89,7 @@ type UiMessageKind =
   | "error";
 
 type UiMessageStatus = "streaming" | "completed" | "error";
-type MainPanel = "chat" | "skills";
+type MainPanel = "chat" | "skills" | "dingtalk" | "settings";
 type LicensePhase = "checking" | "missing" | "valid" | "error";
 type AuthPhase = "checking" | "anonymous" | "authenticated" | "error";
 type AuthMode = "login" | "register";
@@ -305,7 +310,7 @@ function renderMessageAttachments(attachments?: MessageAttachment[]) {
               color={attachment.kind === "image" ? "blue" : "cyan"}
               style={{ marginInlineEnd: 0 }}
             >
-              {attachment.kind}
+              {attachment.kind === "image" ? "图片" : "音频"}
             </Tag>
           </div>
         </div>
@@ -325,13 +330,13 @@ function renderActivationScreen(
 ) {
   const isChecking = phase === "checking";
   const title = status?.valid
-    ? "License Verified"
+    ? "许可证已验证"
     : isChecking
-      ? "Checking Local License"
-      : "License Required";
+      ? "正在检查本地许可证"
+      : "需要许可证";
   const subtitle = status?.valid
-    ? "This desktop app is licensed for the current account."
-    : "Import a signed license file before entering the login workspace.";
+    ? "当前账号的桌面应用许可证已生效。"
+    : "进入登录工作区前，请先导入签名许可证文件。";
 
   return (
     <div
@@ -401,7 +406,7 @@ function renderActivationScreen(
             <Alert
               type="error"
               showIcon
-              message="License Error"
+              message="许可证错误"
               description={licenseError}
               style={{ marginBottom: 18 }}
             />
@@ -427,22 +432,22 @@ function renderActivationScreen(
           >
             <Space direction="vertical" size={12} style={{ display: "flex" }}>
               <div>
-                <Text style={{ color: "#94a3b8", fontSize: 12 }}>Licensed Account</Text>
+                <Text style={{ color: "#94a3b8", fontSize: 12 }}>授权账号</Text>
                 <Paragraph style={{ margin: "8px 0 0", color: "#dbeafe", fontSize: 13 }}>
-                  {status?.accountEmail ?? "Pending..."}
+                  {status?.accountEmail ?? "待生成..."}
                 </Paragraph>
               </div>
 
               <div>
-                <Text style={{ color: "#94a3b8", fontSize: 12 }}>License Storage</Text>
+                <Text style={{ color: "#94a3b8", fontSize: 12 }}>许可证存储位置</Text>
                 <Paragraph style={{ margin: "8px 0 0", color: "#cbd5e1", fontSize: 13 }}>
-                  {status?.appDataDir ?? "Pending..."}
+                  {status?.appDataDir ?? "待生成..."}
                 </Paragraph>
               </div>
 
               {status?.licenseId ? (
                 <div>
-                  <Text style={{ color: "#94a3b8", fontSize: 12 }}>License ID</Text>
+                  <Text style={{ color: "#94a3b8", fontSize: 12 }}>许可证 ID</Text>
                   <Paragraph style={{ margin: "8px 0 0", color: "#f8fafc", fontSize: 13 }}>
                     {status.licenseId}
                   </Paragraph>
@@ -459,13 +464,13 @@ function renderActivationScreen(
               onClick={onImportClick}
               disabled={licenseBusy || isChecking}
             >
-              Import License File
+              导入许可证文件
             </Button>
             <Button size="large" onClick={onRefresh} disabled={licenseBusy}>
-              Refresh Status
+              刷新状态
             </Button>
             <Button danger size="large" onClick={onClear} disabled={licenseBusy}>
-              Clear License
+              清除许可证
             </Button>
           </Space>
         </div>
@@ -486,11 +491,11 @@ function renderAuthScreen(
   onPasswordChange: (value: string) => void,
   onSubmit: () => void,
 ) {
-  const title = mode === "login" ? "Sign In" : "Create Local Account";
+  const title = mode === "login" ? "登录" : "创建本地账号";
   const subtitle =
     mode === "login"
-      ? "Use the same email address that your desktop license was issued to."
-      : "Create a local account on this device, then sign in with the licensed email.";
+      ? "请使用与你的桌面许可证一致的邮箱地址登录。"
+      : "先在当前设备创建本地账号，再使用已授权邮箱登录。";
 
   return (
     <div
@@ -551,7 +556,7 @@ function renderAuthScreen(
                 boxShadow: "0 0 16px rgba(51,167,255,0.8)",
               }}
             />
-            HZCUclaw Desktop
+            HZCUclaw 桌面端
           </div>
 
           <div style={{ maxWidth: 520, marginTop: 92 }}>
@@ -570,7 +575,7 @@ function renderAuthScreen(
                 textTransform: "uppercase",
               }}
             >
-              Licensed workspace
+              已授权工作区
             </div>
 
             <Title
@@ -584,11 +589,11 @@ function renderAuthScreen(
                 fontWeight: 600,
               }}
             >
-              Desktop AI,
+              桌面端 AI，
               <br />
-              gated by
+              由许可证
               <br />
-              license and account.
+              与账号共同保护。
             </Title>
 
             <Paragraph
@@ -600,9 +605,7 @@ function renderAuthScreen(
                 maxWidth: 460,
               }}
             >
-              Inspired by structured auth layouts like Rive, this screen keeps the
-              desktop entry flow clear: validate the local license first, then sign in
-              with the matching account.
+              这个页面将桌面端入口流程做了清晰分层：先验证本地许可证，再使用匹配账号登录。
             </Paragraph>
 
             <div
@@ -613,9 +616,9 @@ function renderAuthScreen(
               }}
             >
               {[
-                "Persistent local session until manual sign-out",
-                "License email and login email must match",
-                "Online and local model modes stay behind the same auth gate",
+                "本地会话会持续保留，直到你手动退出登录",
+                "许可证邮箱与登录邮箱必须保持一致",
+                "在线与本地模型模式共用同一套授权入口",
               ].map((item) => (
                 <div
                   key={item}
@@ -711,7 +714,7 @@ function renderAuthScreen(
               <Alert
                 type="error"
                 showIcon
-                message="Authentication Error"
+                message="认证错误"
                 description={authError}
                 style={{ marginBottom: 18 }}
               />
@@ -740,7 +743,7 @@ function renderAuthScreen(
                 </Text>
                 <Input
                   size="large"
-                  placeholder="demo@example.com"
+                  placeholder="请输入邮箱，例如 demo@example.com"
                   value={email}
                   disabled={busy}
                   onChange={(event) => onEmailChange(event.target.value)}
@@ -813,8 +816,7 @@ function renderAuthScreen(
                 lineHeight: 1.8,
               }}
             >
-              The local account is stored only on this device. Logging out clears the
-              session but keeps the imported license.
+              本地账号只保存在当前设备。退出登录会清除会话，但不会删除已导入的许可证。
             </div>
           </div>
         </div>
@@ -862,6 +864,21 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [dingtalkStatus, setDingtalkStatus] = useState<DingTalkStatus | null>(null);
+  const [dingtalkBusy, setDingtalkBusy] = useState(false);
+  const [systemPromptSettings, setSystemPromptSettings] =
+    useState<SystemPromptSettings | null>(null);
+  const [systemPromptDraft, setSystemPromptDraft] = useState("");
+  const [loadingSystemPrompt, setLoadingSystemPrompt] = useState(true);
+  const [savingSystemPrompt, setSavingSystemPrompt] = useState(false);
+
+  const terminalCommandSkill = useMemo(
+    () => skills.find((skill) => skill.id === "execute-terminal-command") ?? null,
+    [skills],
+  );
+  const terminalCommandRequiresApproval =
+    terminalCommandSkill?.requiresConfirmation ?? true;
+  const terminalCommandDirectExecutionEnabled = !terminalCommandRequiresApproval;
 
   // conversationRef 保存真正传给后端模型代理的对话历史。
   const conversationRef = useRef<ConversationMessage[]>([]);
@@ -887,12 +904,17 @@ export default function App() {
   const clearAuthenticatedState = () => {
     setCurrentUser(null);
     setSessionStatus(null);
+    setDingtalkStatus(null);
     setAuthPhase("anonymous");
     setAuthError(null);
     setBackendStatuses(null);
     setLoadingStatuses(true);
     setSkills([]);
     setLoadingSkills(true);
+    setSystemPromptSettings(null);
+    setSystemPromptDraft("");
+    setLoadingSystemPrompt(true);
+    setSavingSystemPrompt(false);
     resetPendingAttachments();
     setRunning(false);
   };
@@ -1014,6 +1036,62 @@ export default function App() {
 
     void loadSkills();
   }, [authPhase, licensePhase]);
+
+  useEffect(() => {
+    if (licensePhase !== "valid" || authPhase !== "authenticated") {
+      return;
+    }
+
+    const loadSystemPromptSettings = async () => {
+      try {
+        const settings = await invoke<SystemPromptSettings>(
+          "get_system_prompt_settings",
+        );
+        setSystemPromptSettings(settings);
+        setSystemPromptDraft(settings.customPrompt);
+      } catch (error) {
+        setAppError(formatUnknownError(error));
+      } finally {
+        setLoadingSystemPrompt(false);
+      }
+    };
+
+    void loadSystemPromptSettings();
+  }, [authPhase, licensePhase]);
+
+  const refreshDingtalkStatus = async () => {
+    try {
+      const status = await invoke<DingTalkStatus>("get_dingtalk_status");
+      setDingtalkStatus(status);
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    }
+  };
+
+  useEffect(() => {
+    if (licensePhase !== "valid" || authPhase !== "authenticated") {
+      return;
+    }
+
+    void refreshDingtalkStatus();
+  }, [authPhase, licensePhase]);
+
+  useEffect(() => {
+    if (licensePhase !== "valid" || authPhase !== "authenticated") {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void refreshDingtalkStatus();
+    }, activePanel === "dingtalk" || dingtalkStatus?.running ? 5000 : 15000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    activePanel,
+    authPhase,
+    dingtalkStatus?.running,
+    licensePhase,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1360,6 +1438,36 @@ export default function App() {
     !running &&
     !loadingStatuses &&
     Boolean(activeStatus?.configured);
+  const systemPromptDirty =
+    systemPromptDraft !== (systemPromptSettings?.customPrompt ?? "");
+
+  const activePanelTitle =
+    activePanel === "chat"
+      ? "对话"
+      : activePanel === "skills"
+        ? "技能"
+        : activePanel === "dingtalk"
+          ? "钉钉中继"
+          : "系统提示词设置";
+
+  const activePanelStatusText =
+    activePanel === "chat"
+      ? runtimeNotice
+      : activePanel === "skills"
+        ? loadingSkills
+          ? "正在加载技能..."
+          : `已加载 ${skills.length} 个技能`
+        : activePanel === "dingtalk"
+          ? dingtalkBusy
+            ? "正在同步中继状态..."
+            : dingtalkStatus?.message ?? "中继状态已就绪"
+          : loadingSystemPrompt
+            ? "正在加载系统提示词设置..."
+            : savingSystemPrompt
+              ? "正在保存系统提示词设置..."
+              : systemPromptDirty
+                ? "有未保存的更改"
+                : "系统提示词设置已就绪";
 
   const statusDot = useMemo(() => {
     if (loadingStatuses) {
@@ -1446,6 +1554,90 @@ export default function App() {
     setAppError(null);
   };
 
+  const startDingtalkBot = async () => {
+    setDingtalkBusy(true);
+    try {
+      const status = await invoke<DingTalkStatus>("start_dingtalk_bot");
+      setDingtalkStatus(status);
+      setActivePanel("dingtalk");
+      setAppError(null);
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    } finally {
+      setDingtalkBusy(false);
+    }
+  };
+
+  const stopDingtalkBot = async () => {
+    setDingtalkBusy(true);
+    try {
+      const status = await invoke<DingTalkStatus>("stop_dingtalk_bot");
+      setDingtalkStatus(status);
+      setAppError(null);
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    } finally {
+      setDingtalkBusy(false);
+    }
+  };
+
+  const refreshSystemPromptSettings = async () => {
+    setLoadingSystemPrompt(true);
+    try {
+      const settings = await invoke<SystemPromptSettings>("get_system_prompt_settings");
+      setSystemPromptSettings(settings);
+      setSystemPromptDraft(settings.customPrompt);
+      setAppError(null);
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    } finally {
+      setLoadingSystemPrompt(false);
+    }
+  };
+
+  const saveSystemPromptSettings = async () => {
+    setSavingSystemPrompt(true);
+    try {
+      const settings = await invoke<SystemPromptSettings>(
+        "update_system_prompt_settings",
+        {
+          request: {
+            customPrompt: systemPromptDraft,
+          } satisfies UpdateSystemPromptSettingsRequest,
+        },
+      );
+      setSystemPromptSettings(settings);
+      setSystemPromptDraft(settings.customPrompt);
+      setAppError(null);
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    } finally {
+      setSavingSystemPrompt(false);
+    }
+  };
+
+  const resetSystemPromptSettings = async () => {
+    setSystemPromptDraft("");
+    setSavingSystemPrompt(true);
+    try {
+      const settings = await invoke<SystemPromptSettings>(
+        "update_system_prompt_settings",
+        {
+          request: {
+            customPrompt: "",
+          } satisfies UpdateSystemPromptSettingsRequest,
+        },
+      );
+      setSystemPromptSettings(settings);
+      setSystemPromptDraft(settings.customPrompt);
+      setAppError(null);
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    } finally {
+      setSavingSystemPrompt(false);
+    }
+  };
+
   const handleSkillToggle = async (skillId: string, enabled: boolean) => {
     setUpdatingSkillIds((current) => [...current, skillId]);
 
@@ -1456,6 +1648,33 @@ export default function App() {
           enabled,
         },
       });
+
+      setSkills((current) =>
+        current.map((skill) => (skill.id === updatedSkill.id ? updatedSkill : skill)),
+      );
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    } finally {
+      setUpdatingSkillIds((current) =>
+        current.filter((currentSkillId) => currentSkillId !== skillId),
+      );
+    }
+  };
+
+  const handleTerminalDirectExecutionToggle = async (enabled: boolean) => {
+    const skillId = "execute-terminal-command";
+    setUpdatingSkillIds((current) => [...new Set([...current, skillId])]);
+
+    try {
+      const updatedSkill = await invoke<SkillSummary>(
+        "update_skill_requires_confirmation",
+        {
+          request: {
+            skillId,
+            requiresConfirmation: !enabled,
+          } satisfies UpdateSkillRequiresConfirmationRequest,
+        },
+      );
 
       setSkills((current) =>
         current.map((skill) => (skill.id === updatedSkill.id ? updatedSkill : skill)),
@@ -1635,6 +1854,19 @@ export default function App() {
           toolCall.function.arguments,
         );
 
+        let allowed = terminalCommandDirectExecutionEnabled;
+        if (terminalCommandDirectExecutionEnabled) {
+          setMessages((current) => [
+            ...current,
+            createUiMessage(
+              "tool-call",
+              "终端命令",
+              `已按当前配置直接执行以下命令：\n\n${command}`,
+            ),
+          ]);
+          setRuntimeNotice(`正在按当前配置直接执行终端命令：${command}`);
+        } else {
+
         setMessages((current) => [
           ...current,
           createUiMessage(
@@ -1645,7 +1877,8 @@ export default function App() {
         ]);
         setRuntimeNotice("等待你确认执行终端命令...");
 
-        const allowed = await requestCommandApproval(command);
+        allowed = await requestCommandApproval(command);
+        }
         let toolOutput: string;
         const commandMessageId = createClientId("terminal");
 
@@ -1718,7 +1951,7 @@ export default function App() {
           ...current,
           createUiMessage(
             "tool-call",
-            "DuckDuckGo 搜索",
+            "网页搜索",
             `查询词：${query}\n最大结果数：${maxResults}`,
           ),
           {
@@ -1729,7 +1962,7 @@ export default function App() {
             status: "streaming",
           },
         ]);
-        setRuntimeNotice(`正在使用 DuckDuckGo 搜索：${query}`);
+        setRuntimeNotice(`正在进行网页搜索：${query}`);
 
         try {
           const output = await invoke<string>("run_duckduckgo_search", {
@@ -1740,7 +1973,7 @@ export default function App() {
           });
           const toolOutput = output.trim()
             ? output
-            : "(DuckDuckGo 搜索成功，但没有返回结果)";
+            : "(网页搜索成功，但没有返回结果)";
 
           setMessages((current) =>
             current.map((message) =>
@@ -1756,7 +1989,7 @@ export default function App() {
 
           return toolOutput;
         } catch (error) {
-          const toolOutput = `DuckDuckGo 搜索失败：\n${formatUnknownError(error)}`;
+          const toolOutput = `网页搜索失败：\n${formatUnknownError(error)}`;
 
           setMessages((current) =>
             current.map((message) =>
@@ -1784,8 +2017,8 @@ export default function App() {
           createUiMessage(
             "tool-call",
             "图像识别",
-            `asset_id：${assetId}${task ? `\n任务：${task}` : ""}\nOCR：${
-              ocr ? "true" : "false"
+            `资源 ID：${assetId}${task ? `\n任务：${task}` : ""}\n文字识别：${
+              ocr ? "是" : "否"
             }`,
           ),
           {
@@ -1853,9 +2086,9 @@ export default function App() {
           createUiMessage(
             "tool-call",
             "音频转写",
-            `asset_id：${assetId}${
+            `资源 ID：${assetId}${
               language ? `\n语言：${language}` : ""
-            }${prompt ? `\n提示：${prompt}` : ""}`,
+            }${prompt ? `\n提示词：${prompt}` : ""}`,
           ),
           {
             id: toolMessageId,
@@ -2261,7 +2494,7 @@ export default function App() {
                     当前账号
                   </Text>
                   <Text style={{ display: "block", color: "#f8fafc", fontSize: 14 }}>
-                    {currentUser?.email ?? sessionStatus?.email ?? "Unknown"}
+                    {currentUser?.email ?? sessionStatus?.email ?? "未知"}
                   </Text>
                   <Button
                     type="text"
@@ -2414,6 +2647,22 @@ export default function App() {
                   >
                     技能列表 ({skills.length})
                   </Button>
+                  <Button
+                    block
+                    icon={<ApiOutlined />}
+                    style={navButtonStyle(activePanel === "dingtalk")}
+                    onClick={() => setActivePanel("dingtalk")}
+                  >
+                    钉钉中继
+                  </Button>
+                  <Button
+                    block
+                    icon={<SettingOutlined />}
+                    style={navButtonStyle(activePanel === "settings")}
+                    onClick={() => setActivePanel("settings")}
+                  >
+                    提示词设置
+                  </Button>
                 </Space>
 
                 <div
@@ -2496,10 +2745,10 @@ export default function App() {
                   }}
                 >
                   {loadingStatuses
-                    ? "LOADING"
+                    ? "加载中"
                     : activeStatus?.configured
-                      ? "READY"
-                      : "ERROR"}
+                      ? "就绪"
+                      : "错误"}
                 </Text>
               </div>
             </div>
@@ -2648,10 +2897,10 @@ export default function App() {
                                     }}
                                   >
                                     {message.status === "streaming"
-                                      ? "Streaming"
+                                      ? "输出中"
                                       : message.status === "error"
-                                        ? "Error"
-                                        : "Done"}
+                                        ? "失败"
+                                        : "完成"}
                                   </Text>
                                 </div>
                                 {renderMessageAttachments(message.attachments)}
@@ -2757,7 +3006,7 @@ export default function App() {
                           }
                         }}
                         autoSize={{ minRows: 2, maxRows: 7 }}
-                        placeholder="问问 AI-Universal-Assistant，例如：帮我检查当前目录结构并给出总结。"
+                        placeholder="请向 HZCUclaw 提问，例如：帮我检查当前目录结构并给出总结。"
                         disabled={running}
                         style={{
                           padding: 0,
@@ -2841,7 +3090,7 @@ export default function App() {
                                     {attachment.file.name}
                                   </Text>
                                   <Text style={{ color: "#94a3b8", fontSize: 12 }}>
-                                    {attachment.kind} ·{" "}
+                                    {attachment.kind === "image" ? "图片" : "音频"} ·{" "}
                                     {formatAttachmentSize(attachment.file.size)}
                                   </Text>
                                 </div>
@@ -2878,7 +3127,7 @@ export default function App() {
                             添加附件
                           </Button>
                           <Text style={{ color: "#94a3b8", fontSize: 13 }}>
-                            Ctrl/Cmd + Enter 发送
+                            按 Ctrl/Cmd + Enter 发送
                           </Text>
                           <Text style={{ color: "#64748b", fontSize: 13 }}>
                             滚动仅作用于聊天历史区域
@@ -2898,6 +3147,457 @@ export default function App() {
                   </div>
                 </div>
               </>
+            ) : activePanel === "dingtalk" ? (
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                  padding: "28px 28px 28px",
+                }}
+              >
+                <div style={{ maxWidth: 940, margin: "0 auto", width: "100%" }}>
+                  <div
+                    style={{
+                      borderRadius: 24,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                      padding: "22px 24px",
+                      marginBottom: 22,
+                    }}
+                  >
+                    <Space
+                      size={16}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div>
+                        <Text
+                          style={{
+                            display: "block",
+                            color: "#f8fafc",
+                            fontSize: 18,
+                            fontWeight: 600,
+                          }}
+                        >
+                          钉钉 Stream 模式
+                        </Text>
+                        <Paragraph
+                          style={{
+                            margin: "10px 0 0",
+                            color: "#94a3b8",
+                            fontSize: 13,
+                            lineHeight: 1.8,
+                            maxWidth: 620,
+                          }}
+                        >
+                          你可以在这里启动或停止本地钉钉中继。要实现远程对话和远程控制，桌面应用必须持续在线。
+                        </Paragraph>
+                      </div>
+                      <Space wrap size={12}>
+                        <Button
+                          type="primary"
+                          icon={dingtalkBusy ? <LoadingOutlined /> : <ApiOutlined />}
+                          onClick={() => void startDingtalkBot()}
+                          disabled={dingtalkBusy || dingtalkStatus?.running}
+                        >
+                          启动中继
+                        </Button>
+                        <Button
+                          danger
+                          onClick={() => void stopDingtalkBot()}
+                          disabled={dingtalkBusy || !dingtalkStatus?.running}
+                        >
+                          停止中继
+                        </Button>
+                        <Button
+                          onClick={() => void refreshDingtalkStatus()}
+                          disabled={dingtalkBusy}
+                        >
+                          刷新
+                        </Button>
+                      </Space>
+                    </Space>
+                  </div>
+
+                  {!dingtalkStatus?.configured ? (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      message="钉钉中继尚未配置"
+                      description="请先在 .env 中设置 DINGTALK_CLIENT_ID 和 DINGTALK_CLIENT_SECRET，然后安装 Python 辅助依赖。"
+                      style={{ marginBottom: 18 }}
+                    />
+                  ) : null}
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                      gap: 14,
+                      marginBottom: 18,
+                    }}
+                  >
+                    {[
+                      {
+                        label: "中继状态",
+                        value: dingtalkStatus?.running ? "运行中" : "已停止",
+                        color: dingtalkStatus?.running ? "#22c55e" : "#f87171",
+                      },
+                      {
+                        label: "代理模式",
+                        value: dingtalkStatus?.mode
+                          ? MODE_LABELS[dingtalkStatus.mode]
+                          : MODE_LABELS.online,
+                        color: "#93c5fd",
+                      },
+                      {
+                        label: "远程 /run",
+                        value: dingtalkStatus?.remoteCommandsEnabled
+                          ? "已开启"
+                          : "已关闭",
+                        color: dingtalkStatus?.remoteCommandsEnabled
+                          ? "#fbbf24"
+                          : "#94a3b8",
+                      },
+                      {
+                        label: "允许列表",
+                        value: `${dingtalkStatus?.allowedSenderCount ?? 0} 个发送者 / ${
+                          dingtalkStatus?.allowedChatCount ?? 0
+                        } 个会话`,
+                        color: "#cbd5e1",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        style={{
+                          borderRadius: 20,
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          background: "rgba(255,255,255,0.03)",
+                          padding: "18px 20px",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            display: "block",
+                            color: "#94a3b8",
+                            fontSize: 12,
+                            marginBottom: 8,
+                          }}
+                        >
+                          {item.label}
+                        </Text>
+                        <Text style={{ color: item.color, fontSize: 16, fontWeight: 600 }}>
+                          {item.value}
+                        </Text>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: 24,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                      padding: 20,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        display: "block",
+                        color: "#f8fafc",
+                        fontSize: 16,
+                        fontWeight: 600,
+                        marginBottom: 12,
+                      }}
+                    >
+                      消息命令
+                    </Text>
+                    <Paragraph
+                      style={{
+                        margin: 0,
+                        color: "#94a3b8",
+                        fontSize: 13,
+                        lineHeight: 1.9,
+                      }}
+                    >
+                      发送普通文本即可开始远程对话。你也可以在钉钉里使用 `/status`、`/mode online`、`/mode local`、`/clear` 和
+                      {" "}
+                      <code>/run &lt;command&gt;</code>
+                      {" "}
+                      。其中 `/run` 只有在后端环境变量显式开启且命令前缀已加入白名单时才会生效。
+                    </Paragraph>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: 24,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                      padding: 20,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        marginBottom: 14,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "#f8fafc",
+                          fontSize: 16,
+                          fontWeight: 600,
+                        }}
+                      >
+                        中继事件
+                      </Text>
+                      <Text style={{ color: "#94a3b8", fontSize: 12 }}>
+                        {dingtalkStatus?.events.length ?? 0} 条事件
+                      </Text>
+                    </div>
+
+                    {!dingtalkStatus?.events.length ? (
+                      <Text style={{ color: "#94a3b8", fontSize: 13 }}>
+                        暂无钉钉中继事件。
+                      </Text>
+                    ) : (
+                      <Space direction="vertical" size={10} style={{ display: "flex" }}>
+                        {[...dingtalkStatus.events]
+                          .slice()
+                          .reverse()
+                          .map((event) => (
+                            <div
+                              key={`${event.timestamp}-${event.message}`}
+                              style={{
+                                borderRadius: 18,
+                                border: "1px solid rgba(255,255,255,0.08)",
+                                background: "rgba(2,6,23,0.5)",
+                                padding: "12px 14px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  gap: 12,
+                                  marginBottom: 8,
+                                }}
+                              >
+                                <Tag
+                                  color={
+                                    event.level === "error"
+                                      ? "red"
+                                      : event.level === "warn"
+                                        ? "gold"
+                                        : "blue"
+                                  }
+                                  style={{ marginInlineEnd: 0 }}
+                                >
+                                  {event.level === "error"
+                                    ? "错误"
+                                    : event.level === "warn"
+                                      ? "警告"
+                                      : "信息"}
+                                </Tag>
+                                <Text style={{ color: "#64748b", fontSize: 12 }}>
+                                  {event.timestamp}
+                                </Text>
+                              </div>
+                              <pre
+                                style={{
+                                  margin: 0,
+                                  whiteSpace: "pre-wrap",
+                                  wordBreak: "break-word",
+                                  color: "#dbeafe",
+                                  fontSize: 13,
+                                  lineHeight: 1.8,
+                                  fontFamily:
+                                    '"Cascadia Code","Consolas","SFMono-Regular",monospace',
+                                }}
+                              >
+                                {event.message}
+                              </pre>
+                            </div>
+                          ))}
+                      </Space>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : activePanel === "settings" ? (
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                  padding: "28px 28px 28px",
+                }}
+              >
+                <div style={{ maxWidth: 940, margin: "0 auto", width: "100%" }}>
+                  <div
+                    style={{
+                      borderRadius: 24,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                      padding: "22px 24px",
+                      marginBottom: 22,
+                    }}
+                  >
+                    <Space
+                      size={16}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div>
+                        <Text
+                          style={{
+                            display: "block",
+                            color: "#f8fafc",
+                            fontSize: 18,
+                            fontWeight: 600,
+                          }}
+                        >
+                          系统提示词设置
+                        </Text>
+                        <Paragraph
+                          style={{
+                            margin: "10px 0 0",
+                            color: "#94a3b8",
+                            fontSize: 13,
+                            lineHeight: 1.8,
+                            maxWidth: 680,
+                          }}
+                        >
+                          在这里编辑会追加到运行时环境提示词前面的自定义系统提示词。它会同时影响桌面端对话和钉钉远程对话。
+                        </Paragraph>
+                      </div>
+                      <Space wrap size={12}>
+                        <Button
+                          onClick={() => void refreshSystemPromptSettings()}
+                          disabled={loadingSystemPrompt || savingSystemPrompt}
+                        >
+                          重新加载
+                        </Button>
+                        <Button
+                          onClick={() => void resetSystemPromptSettings()}
+                          disabled={
+                            loadingSystemPrompt ||
+                            savingSystemPrompt ||
+                            !systemPromptDraft.trim()
+                          }
+                        >
+                          重置
+                        </Button>
+                        <Button
+                          type="primary"
+                          icon={savingSystemPrompt ? <LoadingOutlined /> : <SettingOutlined />}
+                          onClick={() => void saveSystemPromptSettings()}
+                          disabled={loadingSystemPrompt || savingSystemPrompt || !systemPromptDirty}
+                        >
+                          保存
+                        </Button>
+                      </Space>
+                    </Space>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: 24,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                      padding: 20,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        display: "block",
+                        color: "#f8fafc",
+                        fontSize: 16,
+                        fontWeight: 600,
+                        marginBottom: 12,
+                      }}
+                    >
+                      自定义系统提示词
+                    </Text>
+                    <Paragraph
+                      style={{
+                        margin: "0 0 14px",
+                        color: "#94a3b8",
+                        fontSize: 13,
+                        lineHeight: 1.8,
+                      }}
+                    >
+                      留空时仅使用内置系统提示词和提示词技能。若在这里保存自定义内容，它会在每次模型请求前追加到基础系统提示词之后。
+                    </Paragraph>
+                    <TextArea
+                      value={systemPromptDraft}
+                      onChange={(event) => setSystemPromptDraft(event.target.value)}
+                      autoSize={{ minRows: 12, maxRows: 24 }}
+                      placeholder="请在这里编写你的自定义系统提示词..."
+                      disabled={loadingSystemPrompt || savingSystemPrompt}
+                      style={{
+                        color: "#f8fafc",
+                        background: "rgba(2,6,23,0.72)",
+                        borderRadius: 18,
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        padding: 16,
+                        fontSize: 13,
+                        lineHeight: 1.8,
+                        fontFamily:
+                          '"Cascadia Code","Consolas","SFMono-Regular",monospace',
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        marginTop: 12,
+                      }}
+                    >
+                      <Text style={{ color: "#94a3b8", fontSize: 12 }}>
+                        {loadingSystemPrompt
+                          ? "正在加载当前设置..."
+                          : `${systemPromptDraft.length} 个字符`}
+                      </Text>
+                      <Text
+                        style={{
+                          color: systemPromptDirty ? "#fbbf24" : "#64748b",
+                          fontSize: 12,
+                        }}
+                      >
+                        {systemPromptDirty ? "有未保存的更改" : "已保存"}
+                      </Text>
+                    </div>
+                  </div>
+
+                  <Alert
+                    type="info"
+                    showIcon
+                    message="工作方式"
+                    description="内置基础提示词仍然会生效。这里的自定义提示词只是额外追加的一层，会在运行时环境信息和已加载技能之前注入。"
+                    style={{
+                      borderRadius: 18,
+                      background: "rgba(15,23,42,0.72)",
+                      border: "1px solid rgba(148,163,184,0.2)",
+                    }}
+                  />
+                </div>
+              </div>
             ) : (
               <div
                 style={{
@@ -2946,7 +3646,7 @@ export default function App() {
                       }}
                     >
                       <Text style={{ color: "#cbd5e1", fontSize: 14 }}>
-                        当前未检测到任何 skills。
+                        当前未检测到任何技能。
                       </Text>
                       <Paragraph
                         style={{
@@ -2998,13 +3698,13 @@ export default function App() {
                                     <Tag
                                       color={skill.skillType === "tool" ? "blue" : "purple"}
                                     >
-                                      {skill.skillType === "tool" ? "tool" : "prompt"}
+                                      {skill.skillType === "tool" ? "工具" : "提示词"}
                                     </Tag>
                                     <Tag color={skill.enabled ? "green" : "red"}>
-                                      {skill.enabled ? "true" : "false"}
+                                      {skill.enabled ? "已启用" : "已停用"}
                                     </Tag>
                                     {skill.requiresConfirmation ? (
-                                      <Tag color="gold">requires-confirmation</Tag>
+                                      <Tag color="gold">需要确认</Tag>
                                     ) : null}
                                   </Space>
                                 </div>
@@ -3018,14 +3718,67 @@ export default function App() {
                                 >
                                   {skill.description}
                                 </Paragraph>
+                                {skill.id === "execute-terminal-command" ? (
+                                  <div
+                                    style={{
+                                      marginTop: 14,
+                                      padding: "14px 16px",
+                                      borderRadius: 18,
+                                      border: "1px solid rgba(255,255,255,0.08)",
+                                      background: "rgba(15,23,42,0.52)",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        gap: 16,
+                                      }}
+                                    >
+                                      <div style={{ minWidth: 0 }}>
+                                        <Text
+                                          style={{
+                                            display: "block",
+                                            color: "#f8fafc",
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          是否不经过审核直接运行终端命令？
+                                        </Text>
+                                        <Text
+                                          style={{
+                                            display: "block",
+                                            color: "#94a3b8",
+                                            fontSize: 12,
+                                            marginTop: 6,
+                                            lineHeight: 1.7,
+                                          }}
+                                        >
+                                          开启后，桌面聊天和钉钉远程对话中的终端命令都会直接执行；关闭后，桌面端仍需点击确认，钉钉端会直接拒绝执行。
+                                        </Text>
+                                      </div>
+                                      <Switch
+                                        checked={!skill.requiresConfirmation}
+                                        loading={updating}
+                                        checkedChildren="开启"
+                                        unCheckedChildren="关闭"
+                                        onChange={(checked) =>
+                                          void handleTerminalDirectExecutionToggle(checked)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                ) : null}
                               </div>
 
                               <div style={{ flexShrink: 0 }}>
                                 <Switch
                                   checked={skill.enabled}
                                   loading={updating}
-                                  checkedChildren="true"
-                                  unCheckedChildren="false"
+                                  checkedChildren="开启"
+                                  unCheckedChildren="关闭"
                                   onChange={(checked) =>
                                     void handleSkillToggle(skill.id, checked)
                                   }

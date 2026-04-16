@@ -7,6 +7,7 @@ mod assets;
 mod audio;
 mod command_runner;
 mod constants;
+mod dingtalk;
 mod env;
 mod events;
 pub mod licensing;
@@ -15,6 +16,7 @@ mod logging;
 mod models;
 mod python;
 mod search;
+mod settings;
 mod skills;
 mod vision;
 
