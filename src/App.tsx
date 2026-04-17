@@ -45,6 +45,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivationScreen } from "./components/ActivationScreen";
 import { AuthScreen } from "./components/AuthScreen";
+import { ConversationList } from "./components/ConversationList";
 import { MessageAttachments } from "./components/MessageAttachments";
 import { formatAttachmentSize } from "./lib/utils";
 import {
@@ -96,6 +97,11 @@ import {
   type TranscribeAudioRequest,
   type UpdateSkillRequiresConfirmationRequest,
   type UpdateSystemPromptSettingsRequest,
+  type ConversationSummary,
+  type CreateConversationRequest,
+  type ConversationMessagesRequest,
+  type AppendConversationMessagesRequest,
+  type DeleteConversationRequest,
 } from "./lib/llm";
 import avatarImg from "../image/13021.jpg";
 
@@ -314,6 +320,10 @@ export default function App() {
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   const terminalCommandSkill = useMemo(
     () => skills.find((skill) => skill.id === "execute-terminal-command") ?? null,
     [skills],
@@ -359,6 +369,8 @@ export default function App() {
     setSavingSystemPrompt(false);
     resetPendingAttachments();
     setRunning(false);
+    setConversations([]);
+    setActiveConversationId(null);
   };
 
   useEffect(() => {
@@ -518,7 +530,20 @@ export default function App() {
       }
     };
 
+    const loadHistory = async () => {
+      setLoadingHistory(true);
+      try {
+        const summaries = await invoke<ConversationSummary[]>("get_conversation_summaries");
+        setConversations(summaries);
+      } catch (error) {
+        setAppError(formatUnknownError(error));
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
     void loadSystemPromptSettings();
+    void loadHistory();
   }, [authPhase, licensePhase]);
 
   const refreshDingtalkStatus = async () => {
@@ -1634,6 +1659,79 @@ export default function App() {
     conversationRef.current = [];
     currentAssistantMessageIdRef.current = null;
     setActivePanel("chat");
+    setActiveConversationId(null);
+  };
+
+  const handleSelectConversation = async (conversationId: string) => {
+    if (running) return;
+    try {
+      const msgs = await invoke<ConversationMessage[]>("get_conversation_messages", {
+        request: { conversationId } satisfies ConversationMessagesRequest
+      });
+      
+      const summary = conversations.find(c => c.id === conversationId);
+      if (summary) setMode(summary.mode);
+
+      // Reconstruct UI messages
+      const uiMessages: UiMessage[] = [];
+      msgs.forEach(msg => {
+        if (msg.role === "user") {
+          uiMessages.push(createUiMessage("user", "你", msg.content || ""));
+        } else if (msg.role === "assistant") {
+          if (msg.content) {
+            uiMessages.push(createUiMessage("assistant", "助手", msg.content));
+          }
+          if (msg.toolCalls && msg.toolCalls.length > 0) {
+            for (const call of msg.toolCalls) {
+              uiMessages.push(createUiMessage("tool-call", "工具调用", call.function.name + "\n" + call.function.arguments));
+            }
+          }
+        } else if (msg.role === "tool") {
+          uiMessages.push(createUiMessage("tool-result", "终端结果", msg.content || ""));
+        }
+      });
+      
+      messagesRef.current.forEach(m => releaseAttachmentPreviews(m.attachments));
+      setMessages(uiMessages);
+      resetPendingAttachments();
+      conversationRef.current = msgs;
+      currentAssistantMessageIdRef.current = null;
+      setActiveConversationId(conversationId);
+      setActivePanel("chat");
+      setRuntimeNotice("已加载历史会话");
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    }
+  };
+
+  const handleDeleteConversation = async (conversationId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      await invoke("delete_conversation", {
+        request: { conversationId } satisfies DeleteConversationRequest
+      });
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      if (activeConversationId === conversationId) {
+        resetConversation();
+      }
+    } catch (error) {
+      setAppError(formatUnknownError(error));
+    }
+  };
+
+  const persistMessages = async (id: string, msgs: ConversationMessage[]) => {
+    try {
+      const summary = await invoke<ConversationSummary>("append_conversation_messages", {
+        request: {
+          conversationId: id,
+          messages: msgs,
+          mode,
+        } satisfies AppendConversationMessagesRequest
+      });
+      setConversations(prev => prev.map(c => c.id === id ? summary : c));
+    } catch(e) {
+      console.error("Failed to append messages", e);
+    }
   };
 
   const handleSubmit = async () => {
@@ -1675,6 +1773,30 @@ export default function App() {
     setActivePanel("chat");
     setRuntimeNotice("正在启动后端代理...");
 
+    let currentConversationId = activeConversationId;
+    try {
+      if (!currentConversationId) {
+        const summary = await invoke<ConversationSummary>("create_conversation", {
+          request: { mode, title: displayPrompt } satisfies CreateConversationRequest
+        });
+        currentConversationId = summary.id;
+        setActiveConversationId(summary.id);
+        setConversations(prev => [summary, ...prev]);
+      }
+      
+      const userMessage: ConversationMessage = {
+        role: "user",
+        content: finalPrompt,
+      };
+      
+      await persistMessages(currentConversationId, [userMessage]);
+    } catch(e) {
+      setAppError(formatUnknownError(e));
+      setRuntimeNotice("开始会话失败");
+      setRunning(false);
+      return;
+    }
+
     const streamId = createClientId("stream");
     activeStreamIdRef.current = streamId;
     currentAssistantMessageIdRef.current = null;
@@ -1700,6 +1822,7 @@ export default function App() {
 
         currentConversation = [...currentConversation, ...normalizedMessages];
         conversationRef.current = currentConversation;
+        await persistMessages(currentConversationId, normalizedMessages);
 
         const assistantMessage = [...result.newMessages]
           .reverse()
@@ -1724,27 +1847,24 @@ export default function App() {
         }
 
         for (const toolCall of toolCalls) {
-          {
+          if (toolCall.function.name !== "execute_terminal_command") {
             const toolOutput = await executeToolCall(toolCall, streamId);
+            const toolMsg: ConversationMessage = {
+              role: "tool",
+              content: toolOutput,
+              toolCallId: toolCall.id,
+            };
 
             currentConversation = [
               ...currentConversation,
-              {
-                role: "tool",
-                content: toolOutput,
-                toolCallId: toolCall.id,
-              },
+              toolMsg,
             ];
             conversationRef.current = currentConversation;
+            await persistMessages(currentConversationId, [toolMsg]);
             setRuntimeNotice(
               `已将 ${toolCall.function.name} 的结果回传给模型，继续推理...`,
             );
             continue;
-          }
-          if (toolCall.function.name !== "execute_terminal_command") {
-            throw new Error(
-              `模型请求了未支持的工具：${toolCall.function.name}`,
-            );
           }
 
           const { command } = parseExecuteTerminalCommandArguments(
@@ -1824,15 +1944,17 @@ export default function App() {
             ]);
           }
 
+          const terminalToolMsg: ConversationMessage = {
+            role: "tool",
+            content: toolOutput,
+            toolCallId: toolCall.id,
+          };
           currentConversation = [
             ...currentConversation,
-            {
-              role: "tool",
-              content: toolOutput,
-              toolCallId: toolCall.id,
-            },
+            terminalToolMsg,
           ];
           conversationRef.current = currentConversation;
+          await persistMessages(currentConversationId, [terminalToolMsg]);
           setRuntimeNotice("已将终端结果回传给模型，继续推理...");
         }
       }
@@ -2000,73 +2122,27 @@ export default function App() {
                   flex: 1,
                   padding: 16,
                   display: "flex",
-                  flexDirection: "column"
+                  flexDirection: "column",
+                  overflow: "hidden"
                 }}
               >
-                <Input
-                  prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
-                  placeholder="搜索"
-                  style={{ borderRadius: 18, marginBottom: 12, background: isQclawLight ? "#fff" : "rgba(255,255,255,0.06)", border: "none" }}
-                />
-                <Button
-                  icon={<PlusOutlined />}
-                  onClick={resetConversation}
-                  style={{
-                    borderRadius: 16,
-                    height: 40,
-                    marginBottom: 20,
-                    background: isQclawLight ? "#fff" : "rgba(255,255,255,0.06)",
-                    border: "none",
-                    color: isQclawLight ? "#111827" : "#e2e8f0"
-                  }}
-                >
-                  新建 Agent
-                </Button>
-
-                <div
-                  style={{
-                    flex: 1,
-                    overflowY: "auto"
-                  }}
-                >
-                  {/* 这里渲染历史会话列表 */}
-                  {recentPrompts.length === 0 ? (
-                    <Text style={{ color: isQclawLight ? "#9ca3af" : "#64748b", fontSize: 12 }}>
-                      这里将用于展示持久化历史与最近对话。
-                    </Text>
-                  ) : (
-                    <Space direction="vertical" size={8} style={{ display: "flex" }}>
-                      {recentPrompts.map((prompt, index) => (
-                        <button
-                          key={`${prompt}-${index}`}
-                          type="button"
-                          onClick={() => setActivePanel("chat")}
-                          style={{
-                            width: "100%",
-                            border: isQclawLight
-                              ? "1px solid #e5e7eb"
-                              : "1px solid rgba(255,255,255,0.06)",
-                            background: isQclawLight ? "#f8fafc" : "rgba(255,255,255,0.02)",
-                            color: isQclawLight ? "#374151" : "#cbd5e1",
-                            textAlign: "left",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            cursor: "pointer",
-                            fontSize: 12,
-                            lineHeight: 1.6,
-                          }}
-                        >
-                          {prompt}
-                        </button>
-                      ))}
-                    </Space>
-                  )}
+                <div style={{ flex: 1, overflow: "hidden", paddingBottom: 16 }}>
+                  <ConversationList
+                    conversations={conversations}
+                    activeConversationId={activeConversationId}
+                    loading={loadingHistory}
+                    isLight={isQclawLight}
+                    onSelect={handleSelectConversation}
+                    onDelete={handleDeleteConversation}
+                    onNew={resetConversation}
+                  />
                 </div>
 
                 <div
                   style={{
                     flexShrink: 0,
                     paddingTop: 16,
+                    borderTop: isQclawLight ? "1px solid #e5e7eb" : "1px solid rgba(255,255,255,0.08)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
