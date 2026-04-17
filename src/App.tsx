@@ -18,6 +18,10 @@ import {
   SettingOutlined,
   ThunderboltOutlined,
   WarningFilled,
+  SearchOutlined,
+  PlusOutlined,
+  MobileOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -35,9 +39,26 @@ import {
   Spin,
   Switch,
   Tag,
+  theme as antdTheme,
   Typography,
 } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivationScreen } from "./components/ActivationScreen";
+import { AuthScreen } from "./components/AuthScreen";
+import { MessageAttachments } from "./components/MessageAttachments";
+import { formatAttachmentSize } from "./lib/utils";
+import {
+  UiMessageKind,
+  UiMessageStatus,
+  MainPanel,
+  LicensePhase,
+  AuthPhase,
+  AuthMode,
+  AppearanceMode,
+  UiMessage,
+  PendingAttachment,
+  MessageAttachment,
+} from "./types/ui";
 import {
   MODE_DESCRIPTIONS,
   MODE_LABELS,
@@ -76,49 +97,12 @@ import {
   type UpdateSkillRequiresConfirmationRequest,
   type UpdateSystemPromptSettingsRequest,
 } from "./lib/llm";
+import avatarImg from "../image/13021.jpg";
 
 const { Sider, Content } = Layout;
+const APPEARANCE_MODE_STORAGE_KEY = "qclaw-appearance-mode";
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
-
-type UiMessageKind =
-  | "user"
-  | "assistant"
-  | "tool-call"
-  | "tool-result"
-  | "error";
-
-type UiMessageStatus = "streaming" | "completed" | "error";
-type MainPanel = "chat" | "skills" | "dingtalk" | "settings";
-type LicensePhase = "checking" | "missing" | "valid" | "error";
-type AuthPhase = "checking" | "anonymous" | "authenticated" | "error";
-type AuthMode = "login" | "register";
-
-interface UiMessage {
-  id: string;
-  kind: UiMessageKind;
-  title: string;
-  content: string;
-  status: UiMessageStatus;
-  attachments?: MessageAttachment[];
-}
-
-interface PendingAttachment {
-  id: string;
-  file: File;
-  kind: AssetKind;
-  previewUrl?: string;
-}
-
-interface MessageAttachment {
-  id: string;
-  kind: AssetKind;
-  displayName: string;
-  mimeType: string;
-  sizeBytes: number;
-  previewUrl?: string;
-  assetId?: string;
-}
 
 function readEventField<T>(
   payload: Record<string, unknown>,
@@ -153,7 +137,48 @@ function createUiMessage(
   };
 }
 
-function getMessageTone(kind: UiMessageKind) {
+function getMessageTone(kind: UiMessageKind, light: boolean) {
+  if (light) {
+    switch (kind) {
+      case "user":
+        return {
+          wrapper: "justify-end",
+          card: "border-blue-200 bg-blue-50",
+          title: "text-blue-700",
+        };
+      case "assistant":
+        return {
+          wrapper: "justify-start",
+          card: "border-slate-200 bg-white",
+          title: "text-slate-700",
+        };
+      case "tool-call":
+        return {
+          wrapper: "justify-start",
+          card: "border-amber-200 bg-amber-50",
+          title: "text-amber-700",
+        };
+      case "tool-result":
+        return {
+          wrapper: "justify-start",
+          card: "border-violet-200 bg-violet-50",
+          title: "text-violet-700",
+        };
+      case "error":
+        return {
+          wrapper: "justify-start",
+          card: "border-rose-200 bg-rose-50",
+          title: "text-rose-700",
+        };
+      default:
+        return {
+          wrapper: "justify-start",
+          card: "border-slate-200 bg-white",
+          title: "text-slate-700",
+        };
+    }
+  }
+
   switch (kind) {
     case "user":
       return {
@@ -215,614 +240,12 @@ function inferAssetKind(file: File): AssetKind | null {
   return null;
 }
 
-function formatAttachmentSize(sizeBytes: number): string {
-  if (sizeBytes < 1024) {
-    return `${sizeBytes} B`;
-  }
-
-  if (sizeBytes < 1024 * 1024) {
-    return `${(sizeBytes / 1024).toFixed(1)} KB`;
-  }
-
-  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function releaseAttachmentPreviews(attachments?: MessageAttachment[]) {
   attachments?.forEach((attachment) => {
     if (attachment.previewUrl) {
       URL.revokeObjectURL(attachment.previewUrl);
     }
   });
-}
-
-function renderMessageAttachments(attachments?: MessageAttachment[]) {
-  if (!attachments?.length) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        marginBottom: 14,
-        display: "grid",
-        gap: 10,
-      }}
-    >
-      {attachments.map((attachment) => (
-        <div
-          key={attachment.id}
-          style={{
-            borderRadius: 18,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(2,6,23,0.48)",
-            padding: 12,
-          }}
-        >
-          {attachment.kind === "image" && attachment.previewUrl ? (
-            <img
-              src={attachment.previewUrl}
-              alt={attachment.displayName}
-              style={{
-                display: "block",
-                width: "100%",
-                maxHeight: 220,
-                objectFit: "cover",
-                borderRadius: 14,
-                marginBottom: 10,
-              }}
-            />
-          ) : attachment.kind === "audio" && attachment.previewUrl ? (
-            <audio
-              controls
-              src={attachment.previewUrl}
-              style={{ width: "100%", marginBottom: 10 }}
-            />
-          ) : null}
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <Text
-                style={{
-                  display: "block",
-                  color: "#f8fafc",
-                  fontSize: 13,
-                  fontWeight: 500,
-                }}
-                ellipsis
-              >
-                {attachment.displayName}
-              </Text>
-              <Text style={{ color: "#94a3b8", fontSize: 12 }}>
-                {attachment.kind === "image" ? "图片" : "音频"} ·{" "}
-                {formatAttachmentSize(attachment.sizeBytes)}
-                {attachment.assetId ? ` · ${attachment.assetId}` : ""}
-              </Text>
-            </div>
-
-            <Tag
-              color={attachment.kind === "image" ? "blue" : "cyan"}
-              style={{ marginInlineEnd: 0 }}
-            >
-              {attachment.kind === "image" ? "图片" : "音频"}
-            </Tag>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function renderActivationScreen(
-  phase: LicensePhase,
-  status: LicenseStatus | null,
-  licenseBusy: boolean,
-  licenseError: string | null,
-  onImportClick: () => void,
-  onRefresh: () => void,
-  onClear: () => void,
-) {
-  const isChecking = phase === "checking";
-  const title = status?.valid
-    ? "许可证已验证"
-    : isChecking
-      ? "正在检查本地许可证"
-      : "需要许可证";
-  const subtitle = status?.valid
-    ? "当前账号的桌面应用许可证已生效。"
-    : "进入登录工作区前，请先导入签名许可证文件。";
-
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, rgba(59,130,246,0.22), transparent 42%), linear-gradient(160deg, #020617 0%, #0f172a 55%, #111827 100%)",
-        color: "#f8fafc",
-        display: "grid",
-        placeItems: "center",
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 760,
-          borderRadius: 28,
-          border: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(15,23,42,0.86)",
-          boxShadow: "0 32px 90px rgba(2, 6, 23, 0.52)",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            padding: "28px 30px 22px",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-            background:
-              "linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(15,23,42,0) 100%)",
-          }}
-        >
-          <Space size={14} align="start">
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 18,
-                background: "rgba(59,130,246,0.16)",
-                display: "grid",
-                placeItems: "center",
-                flexShrink: 0,
-              }}
-            >
-              <DesktopOutlined style={{ color: "#93c5fd", fontSize: 22 }} />
-            </div>
-            <div>
-              <Title level={2} style={{ margin: 0, color: "#f8fafc" }}>
-                {title}
-              </Title>
-              <Paragraph
-                style={{
-                  margin: "8px 0 0",
-                  color: "#94a3b8",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                {subtitle}
-              </Paragraph>
-            </div>
-          </Space>
-        </div>
-
-        <div style={{ padding: "28px 30px 30px" }}>
-          {licenseError ? (
-            <Alert
-              type="error"
-              showIcon
-              message="许可证错误"
-              description={licenseError}
-              style={{ marginBottom: 18 }}
-            />
-          ) : null}
-
-          {status ? (
-            <Alert
-              type={status.valid ? "success" : phase === "error" ? "error" : "info"}
-              showIcon
-              message={status.message}
-              style={{ marginBottom: 18 }}
-            />
-          ) : null}
-
-          <div
-            style={{
-              borderRadius: 22,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(2,6,23,0.5)",
-              padding: 22,
-              marginBottom: 18,
-            }}
-          >
-            <Space direction="vertical" size={12} style={{ display: "flex" }}>
-              <div>
-                <Text style={{ color: "#94a3b8", fontSize: 12 }}>授权账号</Text>
-                <Paragraph style={{ margin: "8px 0 0", color: "#dbeafe", fontSize: 13 }}>
-                  {status?.accountEmail ?? "待生成..."}
-                </Paragraph>
-              </div>
-
-              <div>
-                <Text style={{ color: "#94a3b8", fontSize: 12 }}>许可证存储位置</Text>
-                <Paragraph style={{ margin: "8px 0 0", color: "#cbd5e1", fontSize: 13 }}>
-                  {status?.appDataDir ?? "待生成..."}
-                </Paragraph>
-              </div>
-
-              {status?.licenseId ? (
-                <div>
-                  <Text style={{ color: "#94a3b8", fontSize: 12 }}>许可证 ID</Text>
-                  <Paragraph style={{ margin: "8px 0 0", color: "#f8fafc", fontSize: 13 }}>
-                    {status.licenseId}
-                  </Paragraph>
-                </div>
-              ) : null}
-            </Space>
-          </div>
-
-          <Space wrap size={12}>
-            <Button
-              type="primary"
-              size="large"
-              icon={licenseBusy || isChecking ? <LoadingOutlined /> : <FileTextOutlined />}
-              onClick={onImportClick}
-              disabled={licenseBusy || isChecking}
-            >
-              导入许可证文件
-            </Button>
-            <Button size="large" onClick={onRefresh} disabled={licenseBusy}>
-              刷新状态
-            </Button>
-            <Button danger size="large" onClick={onClear} disabled={licenseBusy}>
-              清除许可证
-            </Button>
-          </Space>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function renderAuthScreen(
-  mode: AuthMode,
-  email: string,
-  password: string,
-  busy: boolean,
-  sessionStatus: SessionStatus | null,
-  authError: string | null,
-  onModeChange: (mode: AuthMode) => void,
-  onEmailChange: (value: string) => void,
-  onPasswordChange: (value: string) => void,
-  onSubmit: () => void,
-) {
-  const title = mode === "login" ? "登录" : "创建本地账号";
-  const subtitle =
-    mode === "login"
-      ? "请使用与你的桌面许可证一致的邮箱地址登录。"
-      : "先在当前设备创建本地账号，再使用已授权邮箱登录。";
-
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at 18% 18%, rgba(51,167,255,0.18), transparent 24%), radial-gradient(circle at 82% 16%, rgba(246,197,102,0.14), transparent 20%), linear-gradient(135deg, #111111 0%, #171717 46%, #101828 100%)",
-        color: "#f8fafc",
-        display: "grid",
-        placeItems: "center",
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 1180,
-          minHeight: 720,
-          borderRadius: 32,
-          border: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(18,18,18,0.96)",
-          boxShadow: "0 40px 120px rgba(0,0,0,0.45)",
-          overflow: "hidden",
-          display: "flex",
-          flexWrap: "wrap",
-        }}
-      >
-        <div
-          style={{
-            position: "relative",
-            flex: "1 1 620px",
-            minWidth: 320,
-            padding: "44px 44px 40px",
-            background:
-              "radial-gradient(circle at 20% 20%, rgba(51,167,255,0.16), transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)",
-            borderRight: "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 14px",
-              borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(255,255,255,0.03)",
-              color: "#d4d4d8",
-              fontSize: 13,
-            }}
-          >
-            <span
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 999,
-                background: "#33a7ff",
-                boxShadow: "0 0 16px rgba(51,167,255,0.8)",
-              }}
-            />
-            HZCUclaw 桌面端
-          </div>
-
-          <div style={{ maxWidth: 520, marginTop: 92 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "8px 14px",
-                borderRadius: 999,
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "#f6c566",
-                fontSize: 12,
-                letterSpacing: 0.4,
-                textTransform: "uppercase",
-              }}
-            >
-              已授权工作区
-            </div>
-
-            <Title
-              level={1}
-              style={{
-                margin: "22px 0 16px",
-                color: "#fafafa",
-                fontSize: 64,
-                lineHeight: 1.02,
-                letterSpacing: -2.4,
-                fontWeight: 600,
-              }}
-            >
-              桌面端 AI，
-              <br />
-              由许可证
-              <br />
-              与账号共同保护。
-            </Title>
-
-            <Paragraph
-              style={{
-                margin: 0,
-                color: "#9f9fa9",
-                fontSize: 16,
-                lineHeight: 1.9,
-                maxWidth: 460,
-              }}
-            >
-              这个页面将桌面端入口流程做了清晰分层：先验证本地许可证，再使用匹配账号登录。
-            </Paragraph>
-
-            <div
-              style={{
-                marginTop: 42,
-                display: "grid",
-                gap: 16,
-              }}
-            >
-              {[
-                "本地会话会持续保留，直到你手动退出登录",
-                "许可证邮箱与登录邮箱必须保持一致",
-                "在线与本地模型模式共用同一套授权入口",
-              ].map((item) => (
-                <div
-                  key={item}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "14px 16px",
-                    borderRadius: 18,
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    color: "#e5e7eb",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: 999,
-                      background: "linear-gradient(135deg, #33a7ff 0%, #4cbe9c 100%)",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span style={{ fontSize: 14 }}>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            position: "relative",
-            flex: "1 1 420px",
-            minWidth: 320,
-            display: "grid",
-            placeItems: "center",
-            padding: "44px 34px",
-            background:
-              "radial-gradient(circle at 80% 0%, rgba(255,255,255,0.05), transparent 28%), #111111",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 420,
-              borderRadius: 28,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(255,255,255,0.03)",
-              padding: 28,
-              backdropFilter: "blur(10px)",
-            }}
-          >
-            <Text
-              style={{
-                display: "block",
-                color: "#f5f5f5",
-                fontSize: 28,
-                fontWeight: 600,
-                letterSpacing: -0.6,
-              }}
-            >
-              {title}
-            </Text>
-            <Paragraph
-              style={{
-                margin: "10px 0 0",
-                color: "#8f8f9a",
-                lineHeight: 1.8,
-                fontSize: 14,
-              }}
-            >
-              {subtitle}
-            </Paragraph>
-
-            <Segmented
-              block
-              size="large"
-              value={mode}
-              onChange={(value) => onModeChange(value as AuthMode)}
-              options={[
-                { label: "登录", value: "login" },
-                { label: "注册", value: "register" },
-              ]}
-              style={{
-                marginTop: 24,
-                marginBottom: 20,
-                background: "rgba(255,255,255,0.04)",
-              }}
-            />
-
-            {authError ? (
-              <Alert
-                type="error"
-                showIcon
-                message="认证错误"
-                description={authError}
-                style={{ marginBottom: 18 }}
-              />
-            ) : null}
-
-            {sessionStatus ? (
-              <Alert
-                type={sessionStatus.authenticated ? "success" : "info"}
-                showIcon
-                message={sessionStatus.message}
-                style={{ marginBottom: 18 }}
-              />
-            ) : null}
-
-            <Space direction="vertical" size={14} style={{ display: "flex" }}>
-              <div>
-                <Text
-                  style={{
-                    display: "block",
-                    marginBottom: 8,
-                    color: "#c9c9cf",
-                    fontSize: 13,
-                  }}
-                >
-                  邮箱
-                </Text>
-                <Input
-                  size="large"
-                  placeholder="请输入邮箱，例如 demo@example.com"
-                  value={email}
-                  disabled={busy}
-                  onChange={(event) => onEmailChange(event.target.value)}
-                  style={{
-                    height: 48,
-                    borderRadius: 16,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background: "#1d1d1d",
-                    color: "#f8fafc",
-                  }}
-                />
-              </div>
-
-              <div>
-                <Text
-                  style={{
-                    display: "block",
-                    marginBottom: 8,
-                    color: "#c9c9cf",
-                    fontSize: 13,
-                  }}
-                >
-                  密码
-                </Text>
-                <Input.Password
-                  size="large"
-                  placeholder="至少 6 位"
-                  value={password}
-                  disabled={busy}
-                  onChange={(event) => onPasswordChange(event.target.value)}
-                  onPressEnter={() => void onSubmit()}
-                  style={{
-                    height: 48,
-                    borderRadius: 16,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background: "#1d1d1d",
-                    color: "#f8fafc",
-                  }}
-                />
-              </div>
-
-              <Button
-                type="primary"
-                size="large"
-                icon={busy ? <LoadingOutlined /> : undefined}
-                onClick={onSubmit}
-                disabled={!email.trim() || !password.trim() || busy}
-                style={{
-                  height: 52,
-                  marginTop: 6,
-                  borderRadius: 16,
-                  border: "none",
-                  background: "linear-gradient(135deg, #33a7ff 0%, #1677ff 100%)",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  boxShadow: "0 20px 50px rgba(23,119,255,0.25)",
-                }}
-              >
-                {mode === "login" ? "登录并进入桌面" : "创建设备账号"}
-              </Button>
-            </Space>
-
-            <div
-              style={{
-                marginTop: 22,
-                paddingTop: 18,
-                borderTop: "1px solid rgba(255,255,255,0.08)",
-                color: "#777783",
-                fontSize: 12,
-                lineHeight: 1.8,
-              }}
-            >
-              本地账号只保存在当前设备。退出登录会清除会话，但不会删除已导入的许可证。
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function App() {
@@ -845,6 +268,9 @@ export default function App() {
   const [running, setRunning] = useState(false);
   const [approvalCommand, setApprovalCommand] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<MainPanel>("chat");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dingtalkOpen, setDingtalkOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"general" | "usage" | "skills" | "remote" | "prompt" | "about">("general");
   const [skills, setSkills] = useState<SkillSummary[]>([]);
   const [loadingSkills, setLoadingSkills] = useState(true);
   const [updatingSkillIds, setUpdatingSkillIds] = useState<string[]>([]);
@@ -871,6 +297,22 @@ export default function App() {
   const [systemPromptDraft, setSystemPromptDraft] = useState("");
   const [loadingSystemPrompt, setLoadingSystemPrompt] = useState(true);
   const [savingSystemPrompt, setSavingSystemPrompt] = useState(false);
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
+    if (typeof window === "undefined") {
+      return "system";
+    }
+    const stored = window.localStorage.getItem(APPEARANCE_MODE_STORAGE_KEY);
+    if (stored === "light" || stored === "dark" || stored === "system") {
+      return stored;
+    }
+    return "system";
+  });
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
 
   const terminalCommandSkill = useMemo(
     () => skills.find((skill) => skill.id === "execute-terminal-command") ?? null,
@@ -929,6 +371,26 @@ export default function App() {
         releaseAttachmentPreviews(message.attachments);
       });
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem(APPEARANCE_MODE_STORAGE_KEY, appearanceMode);
+  }, [appearanceMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = (event: MediaQueryListEvent) => {
+      setSystemPrefersDark(event.matches);
+    };
+    setSystemPrefersDark(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
   }, []);
 
   useEffect(() => {
@@ -1440,6 +902,19 @@ export default function App() {
     Boolean(activeStatus?.configured);
   const systemPromptDirty =
     systemPromptDraft !== (systemPromptSettings?.customPrompt ?? "");
+  const resolvedAppearance: Exclude<AppearanceMode, "system"> =
+    appearanceMode === "system"
+      ? systemPrefersDark
+        ? "dark"
+        : "light"
+      : appearanceMode;
+  const isQclawLight = resolvedAppearance === "light";
+  const appearanceModeLabel =
+    appearanceMode === "light"
+      ? "浅色"
+      : appearanceMode === "dark"
+        ? "深色"
+        : `跟随系统（当前${resolvedAppearance === "dark" ? "深色" : "浅色"}）`;
 
   const activePanelTitle =
     activePanel === "chat"
@@ -1509,15 +984,15 @@ export default function App() {
           onChange={handleLicenseImport}
           style={{ display: "none" }}
         />
-        {renderActivationScreen(
-          licensePhase,
-          licenseStatus,
-          licenseBusy,
-          licenseError,
-          openLicensePicker,
-          () => void refreshLicenseStatus(),
-          () => void clearLocalLicense(),
-        )}
+        <ActivationScreen
+          phase={licensePhase}
+          status={licenseStatus}
+          licenseBusy={licenseBusy}
+          licenseError={licenseError}
+          onImportClick={openLicensePicker}
+          onRefresh={() => void refreshLicenseStatus()}
+          onClear={() => void clearLocalLicense()}
+        />
       </ConfigProvider>
     );
   }
@@ -1533,18 +1008,18 @@ export default function App() {
           },
         }}
       >
-        {renderAuthScreen(
-          authMode,
-          authEmail,
-          authPassword,
-          authBusy,
-          sessionStatus,
-          authError,
-          setAuthMode,
-          setAuthEmail,
-          setAuthPassword,
-          () => void handleAuthSubmit(),
-        )}
+        <AuthScreen
+          mode={authMode}
+          email={authEmail}
+          password={authPassword}
+          busy={authBusy}
+          sessionStatus={sessionStatus}
+          authError={authError}
+          onModeChange={setAuthMode}
+          onEmailChange={setAuthEmail}
+          onPasswordChange={setAuthPassword}
+          onSubmit={() => void handleAuthSubmit()}
+        />
       </ConfigProvider>
     );
   }
@@ -1559,7 +1034,7 @@ export default function App() {
     try {
       const status = await invoke<DingTalkStatus>("start_dingtalk_bot");
       setDingtalkStatus(status);
-      setActivePanel("dingtalk");
+      setDingtalkOpen(true);
       setAppError(null);
     } catch (error) {
       setAppError(formatUnknownError(error));
@@ -2379,11 +1854,15 @@ export default function App() {
   return (
     <ConfigProvider
       theme={{
+        algorithm:
+          resolvedAppearance === "dark"
+            ? antdTheme.darkAlgorithm
+            : antdTheme.defaultAlgorithm,
         token: {
-          colorPrimary: "#1677ff",
-          colorTextBase: "#f8fafc",
-          colorBgBase: "#0b1120",
-          colorBorder: "rgba(255,255,255,0.08)",
+          colorPrimary: isQclawLight ? "#2f86ff" : "#1677ff",
+          colorTextBase: isQclawLight ? "#111827" : "#f8fafc",
+          colorBgBase: isQclawLight ? "#ffffff" : "#0b1120",
+          colorBorder: isQclawLight ? "#e5e7eb" : "rgba(255,255,255,0.08)",
           borderRadius: 18,
           fontFamily: '"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif',
         },
@@ -2395,9 +1874,9 @@ export default function App() {
             footerBg: "transparent",
           },
           Segmented: {
-            itemSelectedBg: "rgba(255,255,255,0.12)",
-            itemHoverBg: "rgba(255,255,255,0.08)",
-            trackBg: "rgba(255,255,255,0.04)",
+            itemSelectedBg: isQclawLight ? "#e6efff" : "rgba(255,255,255,0.12)",
+            itemHoverBg: isQclawLight ? "#f1f5f9" : "rgba(255,255,255,0.08)",
+            trackBg: isQclawLight ? "#f3f4f6" : "rgba(255,255,255,0.04)",
           },
           Input: {
             colorBgContainer: "transparent",
@@ -2413,8 +1892,9 @@ export default function App() {
         style={{
           height: "100vh",
           overflow: "hidden",
-          background:
-            "radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 26%), linear-gradient(180deg, #080b12 0%, #0b0f17 52%, #0d1118 100%)",
+          background: isQclawLight
+            ? "linear-gradient(180deg, #f5f5f6 0%, #f0f1f3 100%)"
+            : "radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 26%), linear-gradient(180deg, #080b12 0%, #0b0f17 52%, #0d1118 100%)",
           padding: 16,
         }}
       >
@@ -2430,264 +1910,128 @@ export default function App() {
           }}
         >
           <Sider
-            width={248}
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 28,
-              overflow: "hidden",
-            }}
+            width={260}
+            style={{ background: "transparent" }}
           >
             <div
               style={{
-                height: "100%",
-                padding: 20,
                 display: "flex",
-                flexDirection: "column",
+                height: "100%",
+                overflow: "hidden",
+                borderRadius: 28,
+                background: isQclawLight ? "#f8fafc" : "#1e1e1e",
+                border: isQclawLight ? "1px solid #e5e7eb" : "1px solid rgba(255,255,255,0.08)"
               }}
             >
-              <div style={{ flexShrink: 0 }}>
-                <Space
-                  direction="vertical"
-                  size={4}
-                  style={{ display: "flex", marginBottom: 24 }}
+              {/* 极简侧边栏 */}
+              <div
+                style={{
+                  width: 68,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  padding: "20px 0",
+                  background: isQclawLight ? "#f1f2f4" : "#151515"
+                }}
+              >
+                {/* 头像 */}
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    background: "#475569",
+                    color: "#fff",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    fontWeight: "bold",
+                    overflow: "hidden"
+                  }}
                 >
-                  <Title
-                    level={3}
+                  <img src={avatarImg} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+
+                {/* 顶部菜单：对话 */}
+                <div style={{ flex: 1, marginTop: 32 }}>
+                  <div
+                    onClick={() => setActivePanel("chat")}
                     style={{
-                      margin: 0,
-                      color: "#f8fafc",
-                      fontWeight: 600,
-                      letterSpacing: -0.6,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      cursor: "pointer",
+                      color: activePanel === "chat" ? (isQclawLight ? "#2563eb" : "#dbeafe") : "#64748b"
                     }}
                   >
-                    HZCUclaw
-                  </Title>
-                  <Paragraph
+                    <MessageOutlined style={{ fontSize: 20 }} />
+                    <Text style={{ fontSize: 12, marginTop: 4, color: "inherit" }}>对话</Text>
+                  </div>
+                </div>
+
+                {/* 底部菜单：手机与设置 */}
+                <Space direction="vertical" size={24} style={{ marginBottom: 12 }}>
+                  <div
+                    onClick={() => setDingtalkOpen(true)}
                     style={{
-                      margin: 0,
-                      color: "#94a3b8",
-                      lineHeight: 1.7,
+                      cursor: "pointer",
+                      textAlign: "center",
+                      color: dingtalkOpen ? (isQclawLight ? "#2563eb" : "#dbeafe") : "#64748b"
                     }}
                   >
-                     跨平台AI辅助工具
-                  </Paragraph>
+                    <MobileOutlined style={{ fontSize: 20 }} />
+                  </div>
+                  <div
+                    onClick={() => setSettingsOpen(true)}
+                    style={{
+                      cursor: "pointer",
+                      textAlign: "center",
+                      color: "#64748b"
+                    }}
+                  >
+                    <SettingOutlined style={{ fontSize: 20 }} />
+                  </div>
                 </Space>
-
-                <div
-                  style={{
-                    marginBottom: 18,
-                    borderRadius: 20,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background: "rgba(5,10,18,0.6)",
-                    padding: 16,
-                  }}
-                >
-                  <Text
-                    style={{
-                      display: "block",
-                      color: "#94a3b8",
-                      fontSize: 12,
-                      marginBottom: 6,
-                    }}
-                  >
-                    当前账号
-                  </Text>
-                  <Text style={{ display: "block", color: "#f8fafc", fontSize: 14 }}>
-                    {currentUser?.email ?? sessionStatus?.email ?? "未知"}
-                  </Text>
-                  <Button
-                    type="text"
-                    onClick={() => void handleLogout()}
-                    style={{ marginTop: 10, paddingInline: 0, color: "#93c5fd" }}
-                  >
-                    退出登录
-                  </Button>
-                </div>
-
-                <div
-                  style={{
-                    borderRadius: 24,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background: "rgba(5,10,18,0.6)",
-                    padding: 18,
-                  }}
-                >
-                  <Text
-                    style={{
-                      display: "block",
-                      color: "#94a3b8",
-                      fontSize: 12,
-                      letterSpacing: 1.6,
-                      marginBottom: 12,
-                    }}
-                  >
-                    工作模式
-                  </Text>
-                  <Segmented
-                    block
-                    size="large"
-                    value={mode}
-                    onChange={(value) => setMode(value as AgentMode)}
-                    disabled={running || loadingStatuses}
-                    options={[
-                      {
-                        label: (
-                          <Space size={8}>
-                            <ApiOutlined />
-                            在线
-                          </Space>
-                        ),
-                        value: "online",
-                      },
-                      {
-                        label: (
-                          <Space size={8}>
-                            <RobotOutlined />
-                            本地
-                          </Space>
-                        ),
-                        value: "local",
-                      },
-                    ]}
-                  />
-
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 18,
-                    borderRadius: 24,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background: "rgba(5,10,18,0.6)",
-                    padding: 18,
-                  }}
-                >
-                  <Text
-                    style={{
-                      display: "block",
-                      color: "#94a3b8",
-                      fontSize: 12,
-                      letterSpacing: 1.6,
-                      marginBottom: 12,
-                    }}
-                  >
-                    快捷入口
-                  </Text>
-                  <Space direction="vertical" size={10} style={{ display: "flex" }}>
-                    <Button
-                      block
-                      icon={<MessageOutlined />}
-                      style={buttonGhostStyle}
-                      onClick={() => {
-                        resetConversation();
-                        setActivePanel("chat");
-                      }}
-                      disabled={running}
-                    >
-                      新建对话
-                    </Button>
-                    <Button
-                      block
-                      icon={<DesktopOutlined />}
-                      style={buttonGhostStyle}
-                      onClick={toggleMode}
-                      disabled={running || loadingStatuses}
-                    >
-                      切换到{MODE_LABELS[mode === "online" ? "local" : "online"]}
-                    </Button>
-                    <Button
-                      block
-                      icon={<ThunderboltOutlined />}
-                      style={buttonGhostStyle}
-                      onClick={resetConversation}
-                      disabled={running}
-                    >
-                      清空历史
-                    </Button>
-                  </Space>
-                </div>
               </div>
 
+              {/* 二级侧边栏（新建 Agent / 历史记录） */}
               <div
                 style={{
                   flex: 1,
-                  minHeight: 0,
-                  overflowY: "auto",
-                  marginTop: 18,
-                  paddingRight: 4,
+                  padding: 16,
+                  display: "flex",
+                  flexDirection: "column"
                 }}
               >
-                <Text
+                <Input
+                  prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+                  placeholder="搜索"
+                  style={{ borderRadius: 18, marginBottom: 12, background: isQclawLight ? "#fff" : "rgba(255,255,255,0.06)", border: "none" }}
+                />
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={resetConversation}
                   style={{
-                    display: "block",
-                    color: "#94a3b8",
-                    fontSize: 12,
-                    letterSpacing: 1.6,
-                    marginBottom: 12,
+                    borderRadius: 16,
+                    height: 40,
+                    marginBottom: 20,
+                    background: isQclawLight ? "#fff" : "rgba(255,255,255,0.06)",
+                    border: "none",
+                    color: isQclawLight ? "#111827" : "#e2e8f0"
                   }}
                 >
-                  导航与历史
-                </Text>
-
-                <Space direction="vertical" size={10} style={{ display: "flex" }}>
-                  <Button
-                    block
-                    icon={<MessageOutlined />}
-                    style={navButtonStyle(activePanel === "chat")}
-                    onClick={() => setActivePanel("chat")}
-                  >
-                    对话工作台
-                  </Button>
-                  <Button
-                    block
-                    icon={<FileTextOutlined />}
-                    style={navButtonStyle(activePanel === "skills")}
-                    onClick={() => setActivePanel("skills")}
-                  >
-                    技能列表 ({skills.length})
-                  </Button>
-                  <Button
-                    block
-                    icon={<ApiOutlined />}
-                    style={navButtonStyle(activePanel === "dingtalk")}
-                    onClick={() => setActivePanel("dingtalk")}
-                  >
-                    钉钉中继
-                  </Button>
-                  <Button
-                    block
-                    icon={<SettingOutlined />}
-                    style={navButtonStyle(activePanel === "settings")}
-                    onClick={() => setActivePanel("settings")}
-                  >
-                    提示词设置
-                  </Button>
-                </Space>
+                  新建 Agent
+                </Button>
 
                 <div
                   style={{
-                    marginTop: 18,
-                    borderRadius: 20,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background: "rgba(255,255,255,0.03)",
-                    padding: 14,
+                    flex: 1,
+                    overflowY: "auto"
                   }}
                 >
-                  <Text
-                    style={{
-                      display: "block",
-                      color: "#94a3b8",
-                      fontSize: 12,
-                      letterSpacing: 1.2,
-                      marginBottom: 10,
-                    }}
-                  >
-                    当前会话
-                  </Text>
-
+                  {/* 这里渲染历史会话列表 */}
                   {recentPrompts.length === 0 ? (
-                    <Text style={{ color: "#64748b", fontSize: 12 }}>
+                    <Text style={{ color: isQclawLight ? "#9ca3af" : "#64748b", fontSize: 12 }}>
                       这里将用于展示持久化历史与最近对话。
                     </Text>
                   ) : (
@@ -2699,9 +2043,11 @@ export default function App() {
                           onClick={() => setActivePanel("chat")}
                           style={{
                             width: "100%",
-                            border: "1px solid rgba(255,255,255,0.06)",
-                            background: "rgba(255,255,255,0.02)",
-                            color: "#cbd5e1",
+                            border: isQclawLight
+                              ? "1px solid #e5e7eb"
+                              : "1px solid rgba(255,255,255,0.06)",
+                            background: isQclawLight ? "#f8fafc" : "rgba(255,255,255,0.02)",
+                            color: isQclawLight ? "#374151" : "#cbd5e1",
                             textAlign: "left",
                             borderRadius: 14,
                             padding: "10px 12px",
@@ -2716,40 +2062,42 @@ export default function App() {
                     </Space>
                   )}
                 </div>
-              </div>
 
-              <div
-                style={{
-                  flexShrink: 0,
-                  paddingTop: 20,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Space size={10} align="center">
-                  {statusDot}
-                  <Text style={{ color: "#cbd5e1", fontSize: 13 }}>
-                    后端状态
-                  </Text>
-                </Space>
-                <Text
+                <div
                   style={{
-                    color: loadingStatuses
-                      ? "#94a3b8"
-                      : activeStatus?.configured
-                        ? "#22c55e"
-                        : "#f87171",
-                    fontSize: 12,
-                    letterSpacing: 1.1,
+                    flexShrink: 0,
+                    paddingTop: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
                   }}
                 >
-                  {loadingStatuses
-                    ? "加载中"
-                    : activeStatus?.configured
-                      ? "就绪"
-                      : "错误"}
-                </Text>
+                  <Space size={8} align="center">
+                    {statusDot}
+                    <Text style={{ color: isQclawLight ? "#374151" : "#cbd5e1", fontSize: 12 }}>
+                      后端状态
+                    </Text>
+                  </Space>
+                  <Text
+                    style={{
+                      color: loadingStatuses
+                        ? isQclawLight
+                          ? "#6b7280"
+                          : "#94a3b8"
+                        : activeStatus?.configured
+                          ? "#22c55e"
+                          : "#f87171",
+                      fontSize: 12,
+                      letterSpacing: 1.1,
+                    }}
+                  >
+                    {loadingStatuses
+                      ? "加载中"
+                      : activeStatus?.configured
+                        ? "就绪"
+                        : "错误"}
+                  </Text>
+                </div>
               </div>
             </div>
           </Sider>
@@ -2760,8 +2108,10 @@ export default function App() {
               minHeight: 0,
               display: "flex",
               flexDirection: "column",
-              background: "rgba(255,255,255,0.035)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: isQclawLight ? "#f7f7f8" : "rgba(255,255,255,0.035)",
+              border: isQclawLight
+                ? "1px solid #e5e7eb"
+                : "1px solid rgba(255,255,255,0.08)",
               borderRadius: 28,
               overflow: "hidden",
             }}
@@ -2769,7 +2119,9 @@ export default function App() {
             <div
               style={{
                 padding: "20px 28px 18px",
-                borderBottom: "1px solid rgba(255,255,255,0.08)",
+                borderBottom: isQclawLight
+                  ? "1px solid #e5e7eb"
+                  : "1px solid rgba(255,255,255,0.08)",
               }}
             >
               <div
@@ -2786,7 +2138,11 @@ export default function App() {
                 <div>
                   <Title
                     level={4}
-                    style={{ margin: 0, color: "#f8fafc", fontWeight: 600 }}
+                    style={{
+                      margin: 0,
+                      color: isQclawLight ? "#111827" : "#f8fafc",
+                      fontWeight: 600,
+                    }}
                   >
                     {activePanel === "chat" ? "对话与执行流" : "技能列表"}
                   </Title>
@@ -2794,14 +2150,16 @@ export default function App() {
                 <div
                   style={{
                     borderRadius: 999,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background: "rgba(5,10,18,0.55)",
+                    border: isQclawLight
+                      ? "1px solid #e5e7eb"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    background: isQclawLight ? "#f8fafc" : "rgba(5,10,18,0.55)",
                     padding: "8px 14px",
                     minWidth: 160,
                     textAlign: "center",
                   }}
                 >
-                  <Text style={{ color: "#cbd5e1", fontSize: 13 }}>
+                  <Text style={{ color: isQclawLight ? "#374151" : "#cbd5e1", fontSize: 13 }}>
                     {activePanel === "chat"
                       ? runtimeNotice
                       : loadingSkills
@@ -2819,8 +2177,10 @@ export default function App() {
                     message={appError}
                     style={{
                       borderRadius: 18,
-                      background: "rgba(127,29,29,0.25)",
-                      border: "1px solid rgba(248,113,113,0.2)",
+                      background: isQclawLight ? "#fef2f2" : "rgba(127,29,29,0.25)",
+                      border: isQclawLight
+                        ? "1px solid #fecaca"
+                        : "1px solid rgba(248,113,113,0.2)",
                     }}
                   />
                 </div>
@@ -2840,28 +2200,84 @@ export default function App() {
                 >
                   <div style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>
                     {messages.length === 0 ? (
-                      <div
-                        style={{
-                          minHeight: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Empty
-                          image={Empty.PRESENTED_IMAGE_SIMPLE}
-                          description={
-                            <Space direction="vertical" size={6}>
-                              <Text style={{ color: "#f8fafc", fontSize: 16 }}>
-                                从一个需求开始
-                              </Text>
-                              <Text style={{ color: "#94a3b8" }}>
-                                例如：帮我查看当前目录内容并总结重点文件
-                              </Text>
-                            </Space>
-                          }
-                        />
-                      </div>
+                        <div style={{ paddingTop: 72 }}>
+                          <Title
+                            level={1}
+                            style={{
+                              margin: 0,
+                              textAlign: "center",
+                              fontSize: 52,
+                              lineHeight: 1.05,
+                              color: isQclawLight ? "#111827" : "#ffffff",
+                            }}
+                          >
+                            Hi，我是HZCUClaw
+                          </Title>
+                          <Paragraph
+                            style={{
+                              marginTop: 10,
+                              textAlign: "center",
+                              color: isQclawLight ? "#9aa0a6" : "#a1a1aa",
+                              fontSize: 40,
+                              fontWeight: 600,
+                            }}
+                          >
+                            随时随地，帮您高效干活
+                          </Paragraph>
+                          <div
+                            style={{
+                              marginTop: 30,
+                              display: "grid",
+                              gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                              gap: 14,
+                            }}
+                          >
+                            {[
+                              { title: "安装你的第一个Skill", subtitle: "一键帮你安装超能力", color: isQclawLight ? "#efe9fb" : "#2e2840" },
+                              { title: "邮件管理", subtitle: "帮你高效处理邮件", color: isQclawLight ? "#f8f1e8" : "#3f3523" },
+                              { title: "整理桌面", subtitle: "还你清爽电脑桌面", color: isQclawLight ? "#edf4ec" : "#243029" },
+                              { title: "安排日程", subtitle: "一句话约日程定会议", color: isQclawLight ? "#f9eff1" : "#3b2327" },
+                              { title: "手机远程办公", subtitle: "随时处理在线任务", color: isQclawLight ? "#e9f1f9" : "#1f2e37" },
+                            ].map((card) => (
+                              <button
+                                key={card.title}
+                                type="button"
+                                onClick={() => setInput(card.title)}
+                                style={{
+                                  border: isQclawLight ? "1px solid #e5e7eb" : "1px solid rgba(255,255,255,0.06)",
+                                  borderRadius: 16,
+                                  background: card.color,
+                                  padding: "14px 14px 12px",
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  minHeight: 188,
+                                  boxShadow: isQclawLight ? "none" : "0 4px 20px rgba(0,0,0,0.2)",
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    display: "block",
+                                    color: isQclawLight ? "#111827" : "#f8fafc",
+                                    fontWeight: 600,
+                                    marginTop: 8,
+                                  }}
+                                >
+                                  {card.title}
+                                </Text>
+                                <Text
+                                  style={{
+                                    display: "block",
+                                    color: isQclawLight ? "#6b7280" : "#94a3b8",
+                                    fontSize: 12,
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  {card.subtitle}
+                                </Text>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                     ) : (
                       <Space
                         direction="vertical"
@@ -2869,7 +2285,7 @@ export default function App() {
                         style={{ display: "flex", width: "100%" }}
                       >
                         {messages.map((message) => {
-                          const tone = getMessageTone(message.kind);
+                          const tone = getMessageTone(message.kind, isQclawLight);
 
                           return (
                             <div key={message.id} className={`flex ${tone.wrapper}`}>
@@ -2903,7 +2319,7 @@ export default function App() {
                                         : "完成"}
                                   </Text>
                                 </div>
-                                {renderMessageAttachments(message.attachments)}
+                                <MessageAttachments attachments={message.attachments} light={isQclawLight} />
                                 {message.kind === "tool-result" ? (
                                   <div
                                     style={{
@@ -2911,8 +2327,10 @@ export default function App() {
                                       maxHeight: 260,
                                       overflowY: "auto",
                                       borderRadius: 18,
-                                      border: "1px solid rgba(255,255,255,0.08)",
-                                      background: "#020617",
+                                      border: isQclawLight
+                                        ? "1px solid #e5e7eb"
+                                        : "1px solid rgba(255,255,255,0.08)",
+                                      background: isQclawLight ? "#f8fafc" : "#020617",
                                       padding: "14px 16px",
                                     }}
                                   >
@@ -2921,7 +2339,7 @@ export default function App() {
                                         margin: 0,
                                         whiteSpace: "pre-wrap",
                                         wordBreak: "break-word",
-                                        color: "#dbeafe",
+                                        color: isQclawLight ? "#1f2937" : "#dbeafe",
                                         fontSize: 13,
                                         lineHeight: 1.85,
                                         fontFamily:
@@ -2933,13 +2351,13 @@ export default function App() {
                                   </div>
                                 ) : (
                                   <pre
-                                    style={{
-                                      margin: 0,
-                                      whiteSpace: "pre-wrap",
-                                      wordBreak: "break-word",
-                                      color: "#f8fafc",
-                                      fontSize: 14,
-                                      lineHeight: 1.9,
+                                      style={{
+                                        margin: 0,
+                                        whiteSpace: "pre-wrap",
+                                        wordBreak: "break-word",
+                                        color: isQclawLight ? "#111827" : "#f8fafc",
+                                        fontSize: 14,
+                                        lineHeight: 1.9,
                                       fontFamily:
                                         message.kind === "tool-call"
                                           ? '"Cascadia Code","Consolas","SFMono-Regular",monospace'
@@ -2961,9 +2379,12 @@ export default function App() {
                 <div
                   style={{
                     padding: "16px 24px 24px",
-                    borderTop: "1px solid rgba(255,255,255,0.08)",
-                    background:
-                      "linear-gradient(180deg, rgba(9,14,24,0.2) 0%, rgba(9,14,24,0.75) 38%, rgba(9,14,24,0.95) 100%)",
+                    borderTop: isQclawLight
+                      ? "1px solid #e5e7eb"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    background: isQclawLight
+                      ? "linear-gradient(180deg, rgba(248,250,252,0.65) 0%, rgba(255,255,255,0.95) 62%)"
+                      : "linear-gradient(180deg, rgba(9,14,24,0.2) 0%, rgba(9,14,24,0.75) 38%, rgba(9,14,24,0.95) 100%)",
                   }}
                 >
                   <div style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>
@@ -2974,12 +2395,20 @@ export default function App() {
                       style={{
                         borderRadius: 30,
                         border: dragActive
-                          ? "1px solid rgba(59,130,246,0.55)"
-                          : "1px solid rgba(255,255,255,0.08)",
+                          ? "1px solid #60a5fa"
+                          : isQclawLight
+                            ? "1px solid #e5e7eb"
+                            : "1px solid rgba(255,255,255,0.08)",
                         background: dragActive
-                          ? "rgba(59,130,246,0.08)"
-                          : "rgba(255,255,255,0.04)",
-                        boxShadow: "0 18px 60px rgba(0, 0, 0, 0.28)",
+                          ? isQclawLight
+                            ? "#eef5ff"
+                            : "rgba(59,130,246,0.08)"
+                          : isQclawLight
+                            ? "#ffffff"
+                            : "rgba(255,255,255,0.04)",
+                        boxShadow: isQclawLight
+                          ? "0 12px 30px rgba(15, 23, 42, 0.08)"
+                          : "0 18px 60px rgba(0, 0, 0, 0.28)",
                         padding: 18,
                         transition: "border-color 0.2s ease, background 0.2s ease",
                       }}
@@ -3010,7 +2439,7 @@ export default function App() {
                         disabled={running}
                         style={{
                           padding: 0,
-                          color: "#f8fafc",
+                          color: isQclawLight ? "#111827" : "#f8fafc",
                           background: "transparent",
                           fontSize: 15,
                           lineHeight: 1.9,
@@ -3035,8 +2464,10 @@ export default function App() {
                                 justifyContent: "space-between",
                                 gap: 12,
                                 borderRadius: 18,
-                                border: "1px solid rgba(255,255,255,0.08)",
-                                background: "rgba(2,6,23,0.6)",
+                                border: isQclawLight
+                                  ? "1px solid #e5e7eb"
+                                  : "1px solid rgba(255,255,255,0.08)",
+                                background: isQclawLight ? "#f8fafc" : "rgba(2,6,23,0.6)",
                                 padding: "10px 12px",
                               }}
                             >
@@ -3068,8 +2499,10 @@ export default function App() {
                                       borderRadius: 12,
                                       display: "grid",
                                       placeItems: "center",
-                                      background: "rgba(148,163,184,0.16)",
-                                      color: "#cbd5e1",
+                                      background: isQclawLight
+                                        ? "rgba(148,163,184,0.22)"
+                                        : "rgba(148,163,184,0.16)",
+                                      color: isQclawLight ? "#4b5563" : "#cbd5e1",
                                       fontSize: 12,
                                       flexShrink: 0,
                                     }}
@@ -3082,14 +2515,19 @@ export default function App() {
                                   <Text
                                     style={{
                                       display: "block",
-                                      color: "#f8fafc",
+                                      color: isQclawLight ? "#111827" : "#f8fafc",
                                       fontSize: 13,
                                     }}
                                     ellipsis
                                   >
                                     {attachment.file.name}
                                   </Text>
-                                  <Text style={{ color: "#94a3b8", fontSize: 12 }}>
+                                  <Text
+                                    style={{
+                                      color: isQclawLight ? "#6b7280" : "#94a3b8",
+                                      fontSize: 12,
+                                    }}
+                                  >
                                     {attachment.kind === "image" ? "图片" : "音频"} ·{" "}
                                     {formatAttachmentSize(attachment.file.size)}
                                   </Text>
@@ -3122,14 +2560,14 @@ export default function App() {
                             icon={<PaperClipOutlined />}
                             onClick={openAttachmentPicker}
                             disabled={running}
-                            style={{ color: "#cbd5e1" }}
+                            style={{ color: isQclawLight ? "#374151" : "#cbd5e1" }}
                           >
                             添加附件
                           </Button>
-                          <Text style={{ color: "#94a3b8", fontSize: 13 }}>
+                          <Text style={{ color: isQclawLight ? "#6b7280" : "#94a3b8", fontSize: 13 }}>
                             按 Ctrl/Cmd + Enter 发送
                           </Text>
-                          <Text style={{ color: "#64748b", fontSize: 13 }}>
+                          <Text style={{ color: isQclawLight ? "#9ca3af" : "#64748b", fontSize: 13 }}>
                             滚动仅作用于聊天历史区域
                           </Text>
                         </Space>
@@ -3147,654 +2585,417 @@ export default function App() {
                   </div>
                 </div>
               </>
-            ) : activePanel === "dingtalk" ? (
+            ) : null}
+          </Content>
+        </Layout>
+
+        {/* 手机端的钉钉中继悬浮窗 Modal */}
+        <Modal
+          open={dingtalkOpen}
+          onCancel={() => setDingtalkOpen(false)}
+          footer={null}
+          width={760}
+          styles={{ body: { padding: 0 } }}
+          closable={true}
+          centered
+          destroyOnClose
+        >
+          <div
+            style={{
+              background: isQclawLight ? "#ffffff" : "#0f172a",
+              borderRadius: 16,
+              padding: "16px 36px 16px 0",
+            }}
+          >
+            <div
+              style={{
+                padding: "24px 32px 24px 48px",
+                maxHeight: "80vh",
+                overflowY: "auto",
+              }}
+            >
               <div
                 style={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: "auto",
-                  padding: "28px 28px 28px",
+                  borderRadius: 24,
+                  border: isQclawLight
+                    ? "1px solid #e5e7eb"
+                    : "1px solid rgba(255,255,255,0.08)",
+                  background: isQclawLight ? "#f8fafc" : "rgba(255,255,255,0.03)",
+                  padding: "22px 24px",
+                  marginBottom: 22,
                 }}
               >
-                <div style={{ maxWidth: 940, margin: "0 auto", width: "100%" }}>
-                  <div
+              <Space
+                size={16}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}
+              >
+                <div>
+                  <Text
                     style={{
-                      borderRadius: 24,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
-                      padding: "22px 24px",
-                      marginBottom: 22,
+                      display: "block",
+                      color: isQclawLight ? "#111827" : "#f8fafc",
+                      fontSize: 18,
+                      fontWeight: 600,
                     }}
                   >
-                    <Space
-                      size={16}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div>
-                        <Text
-                          style={{
-                            display: "block",
-                            color: "#f8fafc",
-                            fontSize: 18,
-                            fontWeight: 600,
-                          }}
-                        >
-                          钉钉 Stream 模式
-                        </Text>
-                        <Paragraph
-                          style={{
-                            margin: "10px 0 0",
-                            color: "#94a3b8",
-                            fontSize: 13,
-                            lineHeight: 1.8,
-                            maxWidth: 620,
-                          }}
-                        >
-                          你可以在这里启动或停止本地钉钉中继。要实现远程对话和远程控制，桌面应用必须持续在线。
-                        </Paragraph>
-                      </div>
-                      <Space wrap size={12}>
-                        <Button
-                          type="primary"
-                          icon={dingtalkBusy ? <LoadingOutlined /> : <ApiOutlined />}
-                          onClick={() => void startDingtalkBot()}
-                          disabled={dingtalkBusy || dingtalkStatus?.running}
-                        >
-                          启动中继
-                        </Button>
-                        <Button
-                          danger
-                          onClick={() => void stopDingtalkBot()}
-                          disabled={dingtalkBusy || !dingtalkStatus?.running}
-                        >
-                          停止中继
-                        </Button>
-                        <Button
-                          onClick={() => void refreshDingtalkStatus()}
-                          disabled={dingtalkBusy}
-                        >
-                          刷新
-                        </Button>
-                      </Space>
-                    </Space>
-                  </div>
-
-                  {!dingtalkStatus?.configured ? (
-                    <Alert
-                      type="warning"
-                      showIcon
-                      message="钉钉中继尚未配置"
-                      description="请先在 .env 中设置 DINGTALK_CLIENT_ID 和 DINGTALK_CLIENT_SECRET，然后安装 Python 辅助依赖。"
-                      style={{ marginBottom: 18 }}
-                    />
-                  ) : null}
-
-                  <div
+                    钉钉 Stream 模式
+                  </Text>
+                  <Paragraph
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                      gap: 14,
-                      marginBottom: 18,
+                      margin: "10px 0 0",
+                      color: isQclawLight ? "#64748b" : "#94a3b8",
+                      fontSize: 13,
+                      lineHeight: 1.8,
+                      maxWidth: 420,
                     }}
                   >
-                    {[
-                      {
-                        label: "中继状态",
-                        value: dingtalkStatus?.running ? "运行中" : "已停止",
-                        color: dingtalkStatus?.running ? "#22c55e" : "#f87171",
-                      },
-                      {
-                        label: "代理模式",
-                        value: dingtalkStatus?.mode
-                          ? MODE_LABELS[dingtalkStatus.mode]
-                          : MODE_LABELS.online,
-                        color: "#93c5fd",
-                      },
-                      {
-                        label: "远程 /run",
-                        value: dingtalkStatus?.remoteCommandsEnabled
-                          ? "已开启"
-                          : "已关闭",
-                        color: dingtalkStatus?.remoteCommandsEnabled
-                          ? "#fbbf24"
-                          : "#94a3b8",
-                      },
-                      {
-                        label: "允许列表",
-                        value: `${dingtalkStatus?.allowedSenderCount ?? 0} 个发送者 / ${
-                          dingtalkStatus?.allowedChatCount ?? 0
-                        } 个会话`,
-                        color: "#cbd5e1",
-                      },
-                    ].map((item) => (
+                    你可以在这里启动或停止本地钉钉中继。要实现远程对话和远程控制，桌面应用必须持续在线。
+                  </Paragraph>
+                </div>
+                <Space wrap size={10}>
+                  <Button
+                    type="primary"
+                    shape="round"
+                    icon={dingtalkBusy ? <LoadingOutlined /> : <ApiOutlined />}
+                    onClick={() => void startDingtalkBot()}
+                    disabled={dingtalkBusy || dingtalkStatus?.running}
+                  >
+                    启动
+                  </Button>
+                  <Button
+                    danger
+                    shape="round"
+                    onClick={() => void stopDingtalkBot()}
+                    disabled={dingtalkBusy || !dingtalkStatus?.running}
+                  >
+                    停止
+                  </Button>
+                  <Button
+                    shape="round"
+                    onClick={() => void refreshDingtalkStatus()}
+                    disabled={dingtalkBusy}
+                  >
+                    刷新
+                  </Button>
+                </Space>
+              </Space>
+            </div>
+
+            {!dingtalkStatus?.configured ? (
+              <Alert
+                type="warning"
+                showIcon
+                message="钉钉中继尚未配置"
+                description="请先在 .env 中设置 DINGTALK_CLIENT_ID 和 DINGTALK_CLIENT_SECRET，然后安装 Python 辅助依赖。"
+                style={{ marginBottom: 18, borderRadius: 16 }}
+              />
+            ) : null}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: 14,
+                marginBottom: 24,
+              }}
+            >
+              {[
+                {
+                  label: "中继状态",
+                  value: dingtalkStatus?.running ? "运行中" : "已停止",
+                  color: dingtalkStatus?.running ? "#10b981" : "#ef4444",
+                },
+                {
+                  label: "代理模式",
+                  value: dingtalkStatus?.mode
+                    ? MODE_LABELS[dingtalkStatus.mode]
+                    : MODE_LABELS.online,
+                  color: "#3b82f6",
+                },
+                {
+                  label: "远程 /run",
+                  value: dingtalkStatus?.remoteCommandsEnabled
+                    ? "已开启"
+                    : "已关闭",
+                  color: dingtalkStatus?.remoteCommandsEnabled
+                    ? "#f59e0b"
+                    : (isQclawLight ? "#64748b" : "#94a3b8"),
+                },
+                {
+                  label: "允许列表",
+                  value: `${dingtalkStatus?.allowedSenderCount ?? 0} 个用户 / ${
+                    dingtalkStatus?.allowedChatCount ?? 0
+                  } 个群`,
+                  color: isQclawLight ? "#475569" : "#cbd5e1",
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    borderRadius: 20,
+                    border: isQclawLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.08)",
+                    background: isQclawLight ? "#f8fafc" : "rgba(255,255,255,0.03)",
+                    padding: "16px 20px",
+                  }}
+                >
+                  <Text
+                    style={{
+                      display: "block",
+                      color: isQclawLight ? "#64748b" : "#94a3b8",
+                      fontSize: 12,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {item.label}
+                  </Text>
+                  <Text style={{ color: item.color, fontSize: 16, fontWeight: 600 }}>
+                    {item.value}
+                  </Text>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                borderRadius: 24,
+                border: isQclawLight ? "1px solid #e5e7eb" : "1px solid rgba(255,255,255,0.08)",
+                background: isQclawLight ? "#f8fafc" : "rgba(255,255,255,0.03)",
+                padding: 20,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  marginBottom: 16,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isQclawLight ? "#111827" : "#f8fafc",
+                    fontSize: 16,
+                    fontWeight: 600,
+                  }}
+                >
+                  中继事件日志
+                </Text>
+                <Text style={{ color: isQclawLight ? "#64748b" : "#94a3b8", fontSize: 12 }}>
+                  {dingtalkStatus?.events.length ?? 0} 条事件
+                </Text>
+              </div>
+
+              {!dingtalkStatus?.events.length ? (
+                <Text style={{ color: isQclawLight ? "#94a3b8" : "#64748b", fontSize: 13, display: "block", textAlign: "center", padding: "20px 0" }}>
+                  暂无钉钉中继事件
+                </Text>
+              ) : (
+                <Space direction="vertical" size={10} style={{ display: "flex" }}>
+                  {[...dingtalkStatus.events]
+                    .slice()
+                    .reverse()
+                    .map((event) => (
                       <div
-                        key={item.label}
+                        key={`${event.timestamp}-${event.message}`}
                         style={{
-                          borderRadius: 20,
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          background: "rgba(255,255,255,0.03)",
-                          padding: "18px 20px",
+                          borderRadius: 16,
+                          border: isQclawLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.08)",
+                          background: isQclawLight ? "#ffffff" : "rgba(2,6,23,0.5)",
+                          padding: "12px 16px",
                         }}
                       >
-                        <Text
+                        <div
                           style={{
-                            display: "block",
-                            color: "#94a3b8",
-                            fontSize: 12,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 12,
                             marginBottom: 8,
                           }}
                         >
-                          {item.label}
-                        </Text>
-                        <Text style={{ color: item.color, fontSize: 16, fontWeight: 600 }}>
-                          {item.value}
-                        </Text>
+                          <Tag
+                            color={
+                              event.level === "error"
+                                ? "red"
+                                : event.level === "warn"
+                                  ? "gold"
+                                  : "blue"
+                            }
+                            style={{ marginInlineEnd: 0, borderRadius: 6 }}
+                          >
+                            {event.level === "error"
+                              ? "错误"
+                              : event.level === "warn"
+                                ? "警告"
+                                : "信息"}
+                          </Tag>
+                          <Text style={{ color: isQclawLight ? "#94a3b8" : "#64748b", fontSize: 12 }}>
+                            {event.timestamp}
+                          </Text>
+                        </div>
+                        <pre
+                          style={{
+                            margin: 0,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            color: isQclawLight ? "#334155" : "#dbeafe",
+                            fontSize: 13,
+                            lineHeight: 1.6,
+                            fontFamily:
+                              '"Cascadia Code","Consolas","SFMono-Regular",monospace',
+                          }}
+                        >
+                          {event.message}
+                        </pre>
                       </div>
                     ))}
-                  </div>
+                </Space>
+              )}
+            </div>
+            </div>
+          </div>
+        </Modal>
+        
+        <Modal
+          open={settingsOpen}
+          onCancel={() => setSettingsOpen(false)}
+          footer={null}
+          width={860}
+          styles={{ body: { padding: 0 } }}
+          closable={true}
+          centered
+          destroyOnClose
+        >
+          <div style={{ display: "flex", height: 600, overflow: "hidden", borderRadius: 8 }}>
+             {/* 设置弹窗左侧导航 */}
+             <div style={{ width: 200, background: isQclawLight ? "#f8fafc" : "#18181b", padding: "32px 16px", flexShrink: 0 }}>
+                 <Title level={4} style={{ marginBottom: 28, paddingLeft: 16, color: isQclawLight ? "#111827" : "#f8fafc" }}>设置</Title>
+                 <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                     <Button type={settingsTab === "general" ? "primary" : "text"} block onClick={() => setSettingsTab("general")} style={{ textAlign: "left", height: 44, borderRadius: 12, display: "flex", alignItems: "center", background: settingsTab === "general" ? (isQclawLight ? "#f1f5f9" : "rgba(255,255,255,0.08)") : "transparent", color: settingsTab === "general" ? (isQclawLight ? "#0f172a" : "#f8fafc") : (isQclawLight ? "#64748b" : "#94a3b8") }}><SettingOutlined />通用设置</Button>
+                     <Button type={settingsTab === "usage" ? "primary" : "text"} block onClick={() => setSettingsTab("usage")} style={{ textAlign: "left", height: 44, borderRadius: 12, display: "flex", alignItems: "center", background: settingsTab === "usage" ? (isQclawLight ? "#f1f5f9" : "rgba(255,255,255,0.08)") : "transparent", color: settingsTab === "usage" ? (isQclawLight ? "#0f172a" : "#f8fafc") : (isQclawLight ? "#64748b" : "#94a3b8") }}><DesktopOutlined />用量统计</Button>
+                     <Button type={settingsTab === "skills" ? "primary" : "text"} block onClick={() => setSettingsTab("skills")} style={{ textAlign: "left", height: 44, borderRadius: 12, display: "flex", alignItems: "center", background: settingsTab === "skills" ? (isQclawLight ? "#f1f5f9" : "rgba(255,255,255,0.08)") : "transparent", color: settingsTab === "skills" ? (isQclawLight ? "#0f172a" : "#f8fafc") : (isQclawLight ? "#64748b" : "#94a3b8") }}><AppstoreOutlined />技能管理</Button>
+                     <Button type={settingsTab === "prompt" ? "primary" : "text"} block onClick={() => setSettingsTab("prompt")} style={{ textAlign: "left", height: 44, borderRadius: 12, display: "flex", alignItems: "center", background: settingsTab === "prompt" ? (isQclawLight ? "#f1f5f9" : "rgba(255,255,255,0.08)") : "transparent", color: settingsTab === "prompt" ? (isQclawLight ? "#0f172a" : "#f8fafc") : (isQclawLight ? "#64748b" : "#94a3b8") }}><FileTextOutlined />提示词配置</Button>
+                 </Space>
+             </div>
+             {/* 设置弹窗右侧内容 */}
+             <div style={{ flex: 1, background: isQclawLight ? "#fff" : "#0f172a", padding: "16px 36px 16px 0" }}>
+                 <div style={{ height: "100%", padding: "16px 24px 16px 40px", overflowY: "auto" }}>
+                 {settingsTab === "general" && (
+                    <div>
+                       <Title level={4} style={{ marginBottom: 32, color: isQclawLight ? "#111827" : "#f8fafc" }}>通用设置</Title>
+                       
+                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: isQclawLight ? "1px solid #f1f5f9" : "1px solid rgba(255,255,255,0.08)" }}>
+                           <Text style={{ fontWeight: 600, color: isQclawLight ? "#0f172a" : "#f8fafc" }}>账号与邮箱</Text>
+                           <Text style={{ color: isQclawLight ? "#64748b" : "#94a3b8" }}>{currentUser?.email || "未登录"}</Text>
+                       </div>
 
-                  <div
-                    style={{
-                      borderRadius: 24,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
-                      padding: 20,
-                      marginBottom: 18,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        display: "block",
-                        color: "#f8fafc",
-                        fontSize: 16,
-                        fontWeight: 600,
-                        marginBottom: 12,
-                      }}
-                    >
-                      消息命令
-                    </Text>
-                    <Paragraph
-                      style={{
-                        margin: 0,
-                        color: "#94a3b8",
-                        fontSize: 13,
-                        lineHeight: 1.9,
-                      }}
-                    >
-                      发送普通文本即可开始远程对话。你也可以在钉钉里使用 `/status`、`/mode online`、`/mode local`、`/clear` 和
-                      {" "}
-                      <code>/run &lt;command&gt;</code>
-                      {" "}
-                      。其中 `/run` 只有在后端环境变量显式开启且命令前缀已加入白名单时才会生效。
-                    </Paragraph>
-                  </div>
+                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: isQclawLight ? "1px solid #f1f5f9" : "1px solid rgba(255,255,255,0.08)" }}>
+                           <Text style={{ fontWeight: 600, color: isQclawLight ? "#0f172a" : "#f8fafc" }}>外观模式</Text>
+                           <Segmented
+                             value={appearanceMode}
+                             onChange={(value) => setAppearanceMode(value as AppearanceMode)}
+                             options={[
+                               { label: "浅色", value: "light" },
+                               { label: "深色", value: "dark" },
+                               { label: "跟随系统", value: "system" },
+                             ]}
+                           />
+                       </div>
 
-                  <div
-                    style={{
-                      borderRadius: 24,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
-                      padding: 20,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        marginBottom: 14,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "#f8fafc",
-                          fontSize: 16,
-                          fontWeight: 600,
-                        }}
-                      >
-                        中继事件
-                      </Text>
-                      <Text style={{ color: "#94a3b8", fontSize: 12 }}>
-                        {dingtalkStatus?.events.length ?? 0} 条事件
-                      </Text>
+                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: isQclawLight ? "1px solid #f1f5f9" : "1px solid rgba(255,255,255,0.08)" }}>
+                           <Text style={{ fontWeight: 600, color: isQclawLight ? "#0f172a" : "#f8fafc" }}>工作模式</Text>
+                           <Segmented
+                             value={mode}
+                             onChange={(value) => setMode(value as AgentMode)}
+                             options={[
+                               { label: "连线", value: "online" },
+                               { label: "本地", value: "local" },
+                             ]}
+                           />
+                       </div>
+                       
+                       <Button block danger size="large" style={{ marginTop: 40, borderRadius: 14 }} onClick={() => void handleLogout()}>
+                          退出登录
+                       </Button>
                     </div>
-
-                    {!dingtalkStatus?.events.length ? (
-                      <Text style={{ color: "#94a3b8", fontSize: 13 }}>
-                        暂无钉钉中继事件。
-                      </Text>
-                    ) : (
-                      <Space direction="vertical" size={10} style={{ display: "flex" }}>
-                        {[...dingtalkStatus.events]
-                          .slice()
-                          .reverse()
-                          .map((event) => (
-                            <div
-                              key={`${event.timestamp}-${event.message}`}
-                              style={{
-                                borderRadius: 18,
-                                border: "1px solid rgba(255,255,255,0.08)",
-                                background: "rgba(2,6,23,0.5)",
-                                padding: "12px 14px",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  gap: 12,
-                                  marginBottom: 8,
-                                }}
-                              >
-                                <Tag
-                                  color={
-                                    event.level === "error"
-                                      ? "red"
-                                      : event.level === "warn"
-                                        ? "gold"
-                                        : "blue"
-                                  }
-                                  style={{ marginInlineEnd: 0 }}
-                                >
-                                  {event.level === "error"
-                                    ? "错误"
-                                    : event.level === "warn"
-                                      ? "警告"
-                                      : "信息"}
-                                </Tag>
-                                <Text style={{ color: "#64748b", fontSize: 12 }}>
-                                  {event.timestamp}
-                                </Text>
-                              </div>
-                              <pre
-                                style={{
-                                  margin: 0,
-                                  whiteSpace: "pre-wrap",
-                                  wordBreak: "break-word",
-                                  color: "#dbeafe",
-                                  fontSize: 13,
-                                  lineHeight: 1.8,
-                                  fontFamily:
-                                    '"Cascadia Code","Consolas","SFMono-Regular",monospace',
-                                }}
-                              >
-                                {event.message}
-                              </pre>
-                            </div>
-                          ))}
-                      </Space>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : activePanel === "settings" ? (
-              <div
-                style={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: "auto",
-                  padding: "28px 28px 28px",
-                }}
-              >
-                <div style={{ maxWidth: 940, margin: "0 auto", width: "100%" }}>
-                  <div
-                    style={{
-                      borderRadius: 24,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
-                      padding: "22px 24px",
-                      marginBottom: 22,
-                    }}
-                  >
-                    <Space
-                      size={16}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div>
-                        <Text
-                          style={{
-                            display: "block",
-                            color: "#f8fafc",
-                            fontSize: 18,
-                            fontWeight: 600,
-                          }}
-                        >
-                          系统提示词设置
-                        </Text>
-                        <Paragraph
-                          style={{
-                            margin: "10px 0 0",
-                            color: "#94a3b8",
-                            fontSize: 13,
-                            lineHeight: 1.8,
-                            maxWidth: 680,
-                          }}
-                        >
-                          在这里编辑会追加到运行时环境提示词前面的自定义系统提示词。它会同时影响桌面端对话和钉钉远程对话。
-                        </Paragraph>
-                      </div>
-                      <Space wrap size={12}>
-                        <Button
-                          onClick={() => void refreshSystemPromptSettings()}
-                          disabled={loadingSystemPrompt || savingSystemPrompt}
-                        >
-                          重新加载
-                        </Button>
-                        <Button
-                          onClick={() => void resetSystemPromptSettings()}
-                          disabled={
-                            loadingSystemPrompt ||
-                            savingSystemPrompt ||
-                            !systemPromptDraft.trim()
-                          }
-                        >
-                          重置
-                        </Button>
-                        <Button
-                          type="primary"
-                          icon={savingSystemPrompt ? <LoadingOutlined /> : <SettingOutlined />}
-                          onClick={() => void saveSystemPromptSettings()}
-                          disabled={loadingSystemPrompt || savingSystemPrompt || !systemPromptDirty}
-                        >
-                          保存
-                        </Button>
-                      </Space>
-                    </Space>
-                  </div>
-
-                  <div
-                    style={{
-                      borderRadius: 24,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
-                      padding: 20,
-                      marginBottom: 18,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        display: "block",
-                        color: "#f8fafc",
-                        fontSize: 16,
-                        fontWeight: 600,
-                        marginBottom: 12,
-                      }}
-                    >
-                      自定义系统提示词
-                    </Text>
-                    <Paragraph
-                      style={{
-                        margin: "0 0 14px",
-                        color: "#94a3b8",
-                        fontSize: 13,
-                        lineHeight: 1.8,
-                      }}
-                    >
-                      留空时仅使用内置系统提示词和提示词技能。若在这里保存自定义内容，它会在每次模型请求前追加到基础系统提示词之后。
-                    </Paragraph>
-                    <TextArea
-                      value={systemPromptDraft}
-                      onChange={(event) => setSystemPromptDraft(event.target.value)}
-                      autoSize={{ minRows: 12, maxRows: 24 }}
-                      placeholder="请在这里编写你的自定义系统提示词..."
-                      disabled={loadingSystemPrompt || savingSystemPrompt}
-                      style={{
-                        color: "#f8fafc",
-                        background: "rgba(2,6,23,0.72)",
-                        borderRadius: 18,
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        padding: 16,
-                        fontSize: 13,
-                        lineHeight: 1.8,
-                        fontFamily:
-                          '"Cascadia Code","Consolas","SFMono-Regular",monospace',
-                      }}
-                    />
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        marginTop: 12,
-                      }}
-                    >
-                      <Text style={{ color: "#94a3b8", fontSize: 12 }}>
-                        {loadingSystemPrompt
-                          ? "正在加载当前设置..."
-                          : `${systemPromptDraft.length} 个字符`}
-                      </Text>
-                      <Text
-                        style={{
-                          color: systemPromptDirty ? "#fbbf24" : "#64748b",
-                          fontSize: 12,
-                        }}
-                      >
-                        {systemPromptDirty ? "有未保存的更改" : "已保存"}
-                      </Text>
+                 )}
+                 {settingsTab === "usage" && (
+                    <div>
+                       <Title level={4} style={{ marginBottom: 32, color: isQclawLight ? "#111827" : "#f8fafc" }}>用量统计</Title>
+                       <Empty description="暂无用量统计数据" />
                     </div>
-                  </div>
-
-                  <Alert
-                    type="info"
-                    showIcon
-                    message="工作方式"
-                    description="内置基础提示词仍然会生效。这里的自定义提示词只是额外追加的一层，会在运行时环境信息和已加载技能之前注入。"
-                    style={{
-                      borderRadius: 18,
-                      background: "rgba(15,23,42,0.72)",
-                      border: "1px solid rgba(148,163,184,0.2)",
-                    }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: "auto",
-                  padding: "28px 28px 28px",
-                }}
-              >
-                <div style={{ maxWidth: 940, margin: "0 auto", width: "100%" }}>
-                  <div
-                    style={{
-                      borderRadius: 24,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
-                      padding: "18px 20px",
-                      marginBottom: 22,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 16,
-                    }}
-                  >
-                    <Space size={12}>
-                      <AppstoreOutlined style={{ color: "#93c5fd", fontSize: 16 }} />
-                      <Text style={{ color: "#e2e8f0", fontSize: 14 }}>
-                        这里展示你赋予智能体的所有本地技能及其启用状态。
-                      </Text>
-                    </Space>
-                    <Text style={{ color: "#93c5fd", fontSize: 13 }}>
-                      {loadingSkills ? "读取中" : `${skills.length} 个技能`}
-                    </Text>
-                  </div>
-
-                  {loadingSkills ? (
-                    <div style={{ padding: "40px 0", textAlign: "center" }}>
-                      <Spin indicator={<LoadingOutlined spin />} />
-                    </div>
-                  ) : skills.length === 0 ? (
-                    <div
-                      style={{
-                        borderRadius: 24,
-                        border: "1px dashed rgba(255,255,255,0.08)",
-                        background: "rgba(255,255,255,0.03)",
-                        padding: 22,
-                      }}
-                    >
-                      <Text style={{ color: "#cbd5e1", fontSize: 14 }}>
-                        当前未检测到任何技能。
-                      </Text>
-                      <Paragraph
-                        style={{
-                          margin: "10px 0 0",
-                          color: "#94a3b8",
-                          fontSize: 13,
-                          lineHeight: 1.8,
-                        }}
-                      >
-                        请确认项目根目录下存在 <code>.skills</code> 文件夹，并重启
-                        `npm run tauri dev`。
-                      </Paragraph>
-                    </div>
-                  ) : (
-                    <Space direction="vertical" size={16} style={{ display: "flex" }}>
-                      {skills.map((skill) => {
-                        const updating = updatingSkillIds.includes(skill.id);
-
-                        return (
-                          <div
-                            key={skill.id}
-                            style={{
-                              borderRadius: 24,
-                              border: "1px solid rgba(255,255,255,0.08)",
-                              background: "rgba(255,255,255,0.03)",
-                              padding: 20,
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "flex-start",
-                                justifyContent: "space-between",
-                                gap: 20,
-                              }}
-                            >
-                              <div style={{ minWidth: 0 }}>
-                                <Text
-                                  style={{
-                                    color: "#f8fafc",
-                                    fontSize: 16,
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {skill.name}
-                                </Text>
-                                <div style={{ marginTop: 10 }}>
-                                  <Space wrap size={[8, 8]}>
-                                    <Tag
-                                      color={skill.skillType === "tool" ? "blue" : "purple"}
-                                    >
-                                      {skill.skillType === "tool" ? "工具" : "提示词"}
-                                    </Tag>
-                                    <Tag color={skill.enabled ? "green" : "red"}>
-                                      {skill.enabled ? "已启用" : "已停用"}
-                                    </Tag>
-                                    {skill.requiresConfirmation ? (
-                                      <Tag color="gold">需要确认</Tag>
-                                    ) : null}
-                                  </Space>
-                                </div>
-                                <Paragraph
-                                  style={{
-                                    margin: "14px 0 0",
-                                    color: "#94a3b8",
-                                    fontSize: 13,
-                                    lineHeight: 1.8,
-                                  }}
-                                >
-                                  {skill.description}
-                                </Paragraph>
-                                {skill.id === "execute-terminal-command" ? (
-                                  <div
-                                    style={{
-                                      marginTop: 14,
-                                      padding: "14px 16px",
-                                      borderRadius: 18,
-                                      border: "1px solid rgba(255,255,255,0.08)",
-                                      background: "rgba(15,23,42,0.52)",
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        gap: 16,
-                                      }}
-                                    >
-                                      <div style={{ minWidth: 0 }}>
-                                        <Text
-                                          style={{
-                                            display: "block",
-                                            color: "#f8fafc",
-                                            fontSize: 13,
-                                            fontWeight: 600,
-                                          }}
-                                        >
-                                          是否不经过审核直接运行终端命令？
-                                        </Text>
-                                        <Text
-                                          style={{
-                                            display: "block",
-                                            color: "#94a3b8",
-                                            fontSize: 12,
-                                            marginTop: 6,
-                                            lineHeight: 1.7,
-                                          }}
-                                        >
-                                          开启后，桌面聊天和钉钉远程对话中的终端命令都会直接执行；关闭后，桌面端仍需点击确认，钉钉端会直接拒绝执行。
-                                        </Text>
-                                      </div>
-                                      <Switch
-                                        checked={!skill.requiresConfirmation}
-                                        loading={updating}
-                                        checkedChildren="开启"
-                                        unCheckedChildren="关闭"
-                                        onChange={(checked) =>
-                                          void handleTerminalDirectExecutionToggle(checked)
-                                        }
-                                      />
-                                    </div>
+                 )}
+                 {settingsTab === "skills" && (
+                    <div style={{ paddingBottom: 24 }}>
+                       <Space size={16} style={{ width: "100%", justifyContent: "space-between", marginBottom: 24 }}>
+                           <Title level={4} style={{ margin: 0, color: isQclawLight ? "#111827" : "#f8fafc" }}>技能管理</Title>
+                           <Text style={{ color: "#3b82f6" }}>{loadingSkills ? "读取中" : `${skills.length} 个技能`}</Text>
+                       </Space>
+                       
+                       {loadingSkills ? (
+                         <div style={{ padding: "40px 0", textAlign: "center" }}><Spin indicator={<LoadingOutlined spin />} /></div>
+                       ) : skills.length === 0 ? (
+                         <Empty description="当前未检测到任何技能" />
+                       ) : (
+                         <Space direction="vertical" size={16} style={{ display: "flex" }}>
+                            {skills.map((skill) => {
+                               const updating = updatingSkillIds.includes(skill.id);
+                               return (
+                                  <div key={skill.id} style={{ borderRadius: 20, border: isQclawLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.08)", background: isQclawLight ? "#f8fafc" : "rgba(255,255,255,0.02)", padding: 20 }}>
+                                     <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                        <div style={{ minWidth: 0, paddingRight: 16 }}>
+                                           <Text style={{ color: isQclawLight ? "#0f172a" : "#f8fafc", fontSize: 16, fontWeight: 600 }}>{skill.name}</Text>
+                                           <div style={{ marginTop: 8 }}>
+                                              <Space wrap size={[6, 6]}>
+                                                <Tag color={skill.skillType === "tool" ? "blue" : "purple"}>{skill.skillType === "tool" ? "工具" : "提示词"}</Tag>
+                                                <Tag color={skill.enabled ? "green" : "red"}>{skill.enabled ? "已启用" : "已停用"}</Tag>
+                                              </Space>
+                                           </div>
+                                           <Paragraph style={{ margin: "10px 0 0", color: isQclawLight ? "#64748b" : "#94a3b8", fontSize: 13, lineHeight: 1.6 }}>{skill.description}</Paragraph>
+                                           {skill.id === "execute-terminal-command" ? (
+                                              <div style={{ marginTop: 12, padding: "12px", borderRadius: 14, background: isQclawLight ? "#e2e8f0" : "rgba(15,23,42,0.5)" }}>
+                                                 <Space style={{ display: "flex", justifyContent: "space-between" }}>
+                                                    <Text style={{ fontSize: 13, color: isQclawLight ? "#334155" : "#cbd5e1" }}>不审核直接运行终端命令？</Text>
+                                                    <Switch size="small" checked={!skill.requiresConfirmation} loading={updating} onChange={(checked) => void handleTerminalDirectExecutionToggle(checked)} />
+                                                 </Space>
+                                              </div>
+                                           ) : null}
+                                        </div>
+                                        <div style={{ flexShrink: 0 }}>
+                                           <Switch checked={skill.enabled} loading={updating} onChange={(checked) => void handleSkillToggle(skill.id, checked)} />
+                                        </div>
+                                     </div>
                                   </div>
-                                ) : null}
-                              </div>
+                               );
+                            })}
+                         </Space>
+                       )}
+                    </div>
+                 )}
+                 {settingsTab === "prompt" && (
+                    <div>
+                       <Space size={16} style={{ width: "100%", justifyContent: "space-between", marginBottom: 24 }}>
+                           <Title level={4} style={{ margin: 0, color: isQclawLight ? "#111827" : "#f8fafc" }}>系统提示词配置</Title>
+                           <Space size={8}>
+                               <Button size="small" onClick={() => void refreshSystemPromptSettings()} disabled={loadingSystemPrompt || savingSystemPrompt}>重载</Button>
+                               <Button type="primary" size="small" onClick={() => void saveSystemPromptSettings()} disabled={loadingSystemPrompt || savingSystemPrompt || !systemPromptDirty}>保存</Button>
+                           </Space>
+                       </Space>
+                       <Paragraph style={{ color: isQclawLight ? "#64748b" : "#94a3b8", fontSize: 13 }}>留空时仅使用内置系统提示词与技能。此段内容会追加在运行时环境提示词之后。</Paragraph>
+                       <TextArea value={systemPromptDraft} onChange={(e) => setSystemPromptDraft(e.target.value)} autoSize={{ minRows: 10, maxRows: 20 }} placeholder="自定义指令..." style={{ borderRadius: 16, background: isQclawLight ? "#f8fafc" : "rgba(2,6,23,0.72)", padding: 14, border: isQclawLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.08)", color: isQclawLight ? "#0f172a" : "#f8fafc" }} />
+                    </div>
+                 )}
+                 </div>
+             </div>
+          </div>
+        </Modal>
 
-                              <div style={{ flexShrink: 0 }}>
-                                <Switch
-                                  checked={skill.enabled}
-                                  loading={updating}
-                                  checkedChildren="开启"
-                                  unCheckedChildren="关闭"
-                                  onChange={(checked) =>
-                                    void handleSkillToggle(skill.id, checked)
-                                  }
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </Space>
-                  )}
-                </div>
-              </div>
-            )}
-          </Content>
-        </Layout>
         <Modal
           open={Boolean(approvalCommand)}
           title="确认执行终端命令"
@@ -3838,26 +3039,38 @@ export default function App() {
   );
 }
 
-const buttonGhostStyle = {
-  justifyContent: "flex-start" as const,
-  height: 44,
-  borderRadius: 16,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "rgba(255,255,255,0.03)",
-  color: "#e2e8f0",
-  boxShadow: "none",
-};
+function buttonGhostStyle(light: boolean) {
+  return {
+    justifyContent: "flex-start" as const,
+    height: 44,
+    borderRadius: 16,
+    border: light ? "1px solid #e5e7eb" : "1px solid rgba(255,255,255,0.08)",
+    background: light ? "#f8fafc" : "rgba(255,255,255,0.03)",
+    color: light ? "#374151" : "#e2e8f0",
+    boxShadow: "none",
+  };
+}
 
-function navButtonStyle(active: boolean) {
+function navButtonStyle(active: boolean, light: boolean) {
   return {
     justifyContent: "flex-start" as const,
     height: 46,
     borderRadius: 16,
-    border: active
-      ? "1px solid rgba(59,130,246,0.35)"
-      : "1px solid rgba(255,255,255,0.06)",
-    background: active ? "rgba(59,130,246,0.18)" : "rgba(255,255,255,0.03)",
-    color: active ? "#dbeafe" : "#cbd5e1",
+    border: light
+      ? active
+        ? "1px solid #8cb5ff"
+        : "1px solid #e5e7eb"
+      : active
+        ? "1px solid rgba(59,130,246,0.35)"
+        : "1px solid rgba(255,255,255,0.06)",
+    background: light
+      ? active
+        ? "#e8f1ff"
+        : "#ffffff"
+      : active
+        ? "rgba(59,130,246,0.18)"
+        : "rgba(255,255,255,0.03)",
+    color: light ? (active ? "#2563eb" : "#374151") : active ? "#dbeafe" : "#cbd5e1",
     boxShadow: "none",
   };
 }

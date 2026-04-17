@@ -62,8 +62,8 @@ fn configured_public_key() -> String {
 }
 
 fn read_license_document(path: &Path) -> Result<(LicenseDocument, String), String> {
-    let raw_contents =
-        fs::read_to_string(path).map_err(|error| format!("Failed to read local license copy: {error}"))?;
+    let raw_contents = fs::read_to_string(path)
+        .map_err(|error| format!("Failed to read local license copy: {error}"))?;
     let document = serde_json::from_str::<LicenseDocument>(&raw_contents)
         .map_err(|error| format!("Failed to parse local license copy: {error}"))?;
 
@@ -71,14 +71,17 @@ fn read_license_document(path: &Path) -> Result<(LicenseDocument, String), Strin
 }
 
 fn read_activation_state(path: &Path) -> Result<StoredLicenseState, String> {
-    let raw_contents =
-        fs::read_to_string(path).map_err(|error| format!("Failed to read activation state: {error}"))?;
+    let raw_contents = fs::read_to_string(path)
+        .map_err(|error| format!("Failed to read activation state: {error}"))?;
 
     serde_json::from_str::<StoredLicenseState>(&raw_contents)
         .map_err(|error| format!("Failed to parse activation state: {error}"))
 }
 
-fn invalid_license_status(app: &AppHandle, message: impl Into<String>) -> Result<LicenseStatus, String> {
+fn invalid_license_status(
+    app: &AppHandle,
+    message: impl Into<String>,
+) -> Result<LicenseStatus, String> {
     let app_data_dir = app
         .path()
         .app_data_dir()
@@ -161,14 +164,18 @@ pub(crate) fn get_license_status(app: &AppHandle) -> Result<LicenseStatus, Strin
     }
 }
 
-pub(crate) fn import_license(app: &AppHandle, request: ImportLicenseRequest) -> Result<ImportLicenseResult, String> {
+pub(crate) fn import_license(
+    app: &AppHandle,
+    request: ImportLicenseRequest,
+) -> Result<ImportLicenseResult, String> {
     let _ = &request.file_name;
     if request.contents.trim().is_empty() {
         return Err("License file content cannot be empty.".to_string());
     }
 
-    let document = serde_json::from_str::<LicenseDocument>(&request.contents)
-        .map_err(|_| "Failed to parse license file. Reissue a v2 account-bound license.".to_string())?;
+    let document = serde_json::from_str::<LicenseDocument>(&request.contents).map_err(|_| {
+        "Failed to parse license file. Reissue a v2 account-bound license.".to_string()
+    })?;
     let public_key = verify_key_from_base64(&configured_public_key())?;
     verify_license_document(&document, &public_key)?;
 
@@ -222,5 +229,8 @@ pub(crate) fn clear_license(app: &AppHandle) -> Result<LicenseStatus, String> {
             .map_err(|error| format!("Failed to clear activation data: {error}"))?;
     }
 
-    invalid_license_status(app, "License data cleared. Please import a license file again.")
+    invalid_license_status(
+        app,
+        "License data cleared. Please import a license file again.",
+    )
 }

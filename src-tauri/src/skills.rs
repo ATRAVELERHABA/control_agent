@@ -122,7 +122,10 @@ fn load_all_skill_records() -> Vec<SkillRecord> {
         return Vec::new();
     };
 
-    log_info(format!("Resolved skills directory candidate: {}", skills_dir.display()));
+    log_info(format!(
+        "Resolved skills directory candidate: {}",
+        skills_dir.display()
+    ));
 
     if !skills_dir.exists() {
         log_info(format!(

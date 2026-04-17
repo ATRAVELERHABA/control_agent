@@ -14,8 +14,7 @@ pub(crate) const TOOL_NAME: &str = "execute_terminal_command";
 
 pub(crate) const LICENSE_PRODUCT_ID: &str = "com.aiuniversalassistant.app";
 pub(crate) const LICENSE_SCHEMA_VERSION: u32 = 1;
-pub(crate) const DEFAULT_LICENSE_PUBLIC_KEY: &str =
-    "vZ-2JTrA6D0a5uFfmF74cNe0MBw4No8F_BIYe09GG_E";
+pub(crate) const DEFAULT_LICENSE_PUBLIC_KEY: &str = "vZ-2JTrA6D0a5uFfmF74cNe0MBw4No8F_BIYe09GG_E";
 pub(crate) const LICENSE_PUBLIC_KEY_ENV_NAME: &str = "LICENSE_PUBLIC_KEY";
 pub(crate) const LICENSE_STATE_FILE_NAME: &str = "activation-state.json";
 pub(crate) const LICENSE_COPY_FILE_NAME: &str = "license.json";

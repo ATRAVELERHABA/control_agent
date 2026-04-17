@@ -101,7 +101,10 @@ pub(crate) async fn run_python_script(
                 });
             }
             Err(error) if error.kind() == ErrorKind::NotFound => {
-                last_error = Some(format!("Python interpreter not found: {}", candidate.program));
+                last_error = Some(format!(
+                    "Python interpreter not found: {}",
+                    candidate.program
+                ));
             }
             Err(error) => {
                 last_error = Some(format!(
@@ -135,7 +138,10 @@ pub(crate) async fn start_python_script(
         match command.spawn() {
             Ok(child) => return Ok(child),
             Err(error) if error.kind() == ErrorKind::NotFound => {
-                last_error = Some(format!("Python interpreter not found: {}", candidate.program));
+                last_error = Some(format!(
+                    "Python interpreter not found: {}",
+                    candidate.program
+                ));
             }
             Err(error) => {
                 last_error = Some(format!(

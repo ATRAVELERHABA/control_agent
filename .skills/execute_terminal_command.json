@@ -21,6 +21,6 @@
       ],
       "type": "object"
     },
-    "requires_confirmation": false
+    "requires_confirmation": true
   }
 }

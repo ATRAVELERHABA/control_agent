@@ -124,6 +124,20 @@ impl AgentMode {
     pub(crate) fn api_key_required(self) -> bool {
         matches!(self, Self::Online)
     }
+
+    pub(crate) fn storage_value(self) -> &'static str {
+        match self {
+            Self::Online => "online",
+            Self::Local => "local",
+        }
+    }
+
+    pub(crate) fn from_storage_value(value: &str) -> Self {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "local" => Self::Local,
+            _ => Self::Online,
+        }
+    }
 }
 
 /// 描述某种模型模式依赖的环境变量名称。
@@ -253,6 +267,47 @@ pub(crate) struct RegisterAccountRequest {
 pub(crate) struct LoginRequest {
     pub(crate) email: String,
     pub(crate) password: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ConversationSummary {
+    pub(crate) id: String,
+    pub(crate) title: String,
+    pub(crate) mode: AgentMode,
+    pub(crate) created_at: u64,
+    pub(crate) updated_at: u64,
+    pub(crate) last_preview: String,
+    pub(crate) message_count: u32,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CreateConversationRequest {
+    pub(crate) mode: AgentMode,
+    #[serde(default)]
+    pub(crate) title: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ConversationMessagesRequest {
+    pub(crate) conversation_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AppendConversationMessagesRequest {
+    pub(crate) conversation_id: String,
+    pub(crate) messages: Vec<ConversationMessageDto>,
+    #[serde(default)]
+    pub(crate) mode: Option<AgentMode>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DeleteConversationRequest {
+    pub(crate) conversation_id: String,
 }
 
 #[derive(Debug, Deserialize)]

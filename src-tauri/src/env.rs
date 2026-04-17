@@ -144,11 +144,16 @@ pub(crate) fn load_aliyun_fallback_config(model: &str) -> Result<ProviderConfig,
 
 pub(crate) fn provider_status(mode: AgentMode) -> BackendModeStatus {
     load_backend_env_once();
-    log_info(format!("Checking backend provider status for {}", mode.label()));
+    log_info(format!(
+        "Checking backend provider status for {}",
+        mode.label()
+    ));
 
     if matches!(mode, AgentMode::Online) && online_uses_aliyun_fallback() {
         return if read_online_api_key().is_some() {
-            log_info("OpenAI online config is incomplete; falling back to Alibaba Cloud DashScope.");
+            log_info(
+                "OpenAI online config is incomplete; falling back to Alibaba Cloud DashScope.",
+            );
             BackendModeStatus {
                 mode,
                 configured: true,
@@ -196,7 +201,10 @@ pub(crate) fn provider_status(mode: AgentMode) -> BackendModeStatus {
         BackendModeStatus {
             mode,
             configured: true,
-            message: format!("{} is fully configured from backend environment variables.", mode.label()),
+            message: format!(
+                "{} is fully configured from backend environment variables.",
+                mode.label()
+            ),
         }
     } else {
         BackendModeStatus {
@@ -223,8 +231,8 @@ pub(crate) fn load_provider_config(mode: AgentMode) -> Result<ProviderConfig, St
     let env_names = mode.env_names();
     let base_url = read_env_var(env_names.base_url)
         .ok_or_else(|| format!("Missing environment variable {}", env_names.base_url))?;
-    let model =
-        read_env_var(env_names.model).ok_or_else(|| format!("Missing environment variable {}", env_names.model))?;
+    let model = read_env_var(env_names.model)
+        .ok_or_else(|| format!("Missing environment variable {}", env_names.model))?;
     let api_key = env_names.api_key.and_then(read_env_var).unwrap_or_default();
 
     if mode.api_key_required() && api_key.is_empty() {

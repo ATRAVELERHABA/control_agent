@@ -83,7 +83,8 @@ fn read_accounts(path: &PathBuf) -> Result<StoredAccounts, String> {
 
     let raw = fs::read_to_string(path)
         .map_err(|error| format!("Failed to read local account store: {error}"))?;
-    serde_json::from_str(&raw).map_err(|error| format!("Failed to parse local account store: {error}"))
+    serde_json::from_str(&raw)
+        .map_err(|error| format!("Failed to parse local account store: {error}"))
 }
 
 fn write_accounts(path: &PathBuf, payload: &StoredAccounts) -> Result<(), String> {
@@ -92,7 +93,8 @@ fn write_accounts(path: &PathBuf, payload: &StoredAccounts) -> Result<(), String
         serde_json::to_string_pretty(payload)
             .map_err(|error| format!("Failed to serialize local account store: {error}"))?
     );
-    fs::write(path, serialized).map_err(|error| format!("Failed to persist local account store: {error}"))
+    fs::write(path, serialized)
+        .map_err(|error| format!("Failed to persist local account store: {error}"))
 }
 
 fn read_session(path: &PathBuf) -> Result<Option<StoredSession>, String> {
@@ -136,7 +138,11 @@ pub(crate) fn get_session_status(app: &AppHandle) -> Result<SessionStatus, Strin
     };
 
     let accounts = read_accounts(&paths.accounts_file)?;
-    if !accounts.accounts.iter().any(|account| account.email == session.email) {
+    if !accounts
+        .accounts
+        .iter()
+        .any(|account| account.email == session.email)
+    {
         return Ok(SessionStatus {
             authenticated: false,
             message: "Stored session does not match any local account.".to_string(),
@@ -170,7 +176,11 @@ pub(crate) fn register_account(
         .map_err(|error| format!("Failed to create auth directory: {error}"))?;
 
     let mut accounts = read_accounts(&paths.accounts_file)?;
-    if accounts.accounts.iter().any(|account| account.email == email) {
+    if accounts
+        .accounts
+        .iter()
+        .any(|account| account.email == email)
+    {
         return Err("An account with this email already exists.".to_string());
     }
 

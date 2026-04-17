@@ -143,6 +143,35 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  mode: AgentMode;
+  createdAt: number;
+  updatedAt: number;
+  lastPreview: string;
+  messageCount: number;
+}
+
+export interface CreateConversationRequest {
+  mode: AgentMode;
+  title?: string;
+}
+
+export interface ConversationMessagesRequest {
+  conversationId: string;
+}
+
+export interface AppendConversationMessagesRequest {
+  conversationId: string;
+  messages: ConversationMessage[];
+  mode?: AgentMode;
+}
+
+export interface DeleteConversationRequest {
+  conversationId: string;
+}
+
 export interface SkillSummary {
   id: string;
   name: string;

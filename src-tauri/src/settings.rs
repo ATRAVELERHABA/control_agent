@@ -37,7 +37,9 @@ fn settings_paths(app: &AppHandle) -> Result<SettingsPaths, String> {
     })
 }
 
-fn read_stored_system_prompt_settings(app: &AppHandle) -> Result<StoredSystemPromptSettings, String> {
+fn read_stored_system_prompt_settings(
+    app: &AppHandle,
+) -> Result<StoredSystemPromptSettings, String> {
     let paths = settings_paths(app)?;
     if !paths.system_prompt_file.exists() {
         return Ok(StoredSystemPromptSettings::default());
@@ -103,7 +105,9 @@ pub(crate) fn read_custom_system_prompt(app: &AppHandle) -> Option<String> {
             }
         }
         Err(error) => {
-            log_error(format!("Failed to load custom system prompt settings: {error}"));
+            log_error(format!(
+                "Failed to load custom system prompt settings: {error}"
+            ));
             None
         }
     }

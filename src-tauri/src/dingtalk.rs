@@ -27,7 +27,7 @@ use crate::{
     logging::{log_error, log_info, log_warn, preview_text, timestamp_ms},
     models::{
         AgentMode, ConversationMessageDto, DingTalkLogEntry, DingTalkStatus,
-        RunDuckDuckGoSearchRequest, RunCommandRequest as ShellCommandRequest, SessionStatus,
+        RunCommandRequest as ShellCommandRequest, RunDuckDuckGoSearchRequest, SessionStatus,
         ToolCallDto,
     },
     python::start_python_script,
@@ -183,7 +183,8 @@ fn remote_terminal_blocked_message() -> String {
 }
 
 fn dingtalk_configured() -> bool {
-    read_env_var(DINGTALK_CLIENT_ID_ENV).is_some() && read_env_var(DINGTALK_CLIENT_SECRET_ENV).is_some()
+    read_env_var(DINGTALK_CLIENT_ID_ENV).is_some()
+        && read_env_var(DINGTALK_CLIENT_SECRET_ENV).is_some()
 }
 
 fn dingtalk_script_path() -> Option<PathBuf> {
@@ -341,7 +342,8 @@ fn sender_allowed(message: &IncomingDingTalkMessage) -> bool {
         .trim()
         .to_ascii_lowercase();
 
-    allowed.contains(&sender_id) || (!sender_staff_id.is_empty() && allowed.contains(&sender_staff_id))
+    allowed.contains(&sender_id)
+        || (!sender_staff_id.is_empty() && allowed.contains(&sender_staff_id))
 }
 
 fn chat_allowed(message: &IncomingDingTalkMessage) -> bool {
@@ -367,18 +369,16 @@ fn remote_chat_skills() -> Vec<crate::models::SkillDefinition> {
         .into_iter()
         .filter(|skill| match skill.skill_type {
             crate::models::SkillType::Prompt => true,
-            crate::models::SkillType::Tool => {
-                skill
-                    .tool
-                    .as_ref()
-                    .map(|tool| {
-                        tool.name == TOOL_NAME
-                            || (enable_remote_search
-                                && tool.name == "duckduckgo_search"
-                                && !tool.requires_confirmation)
-                    })
-                    .unwrap_or(false)
-            }
+            crate::models::SkillType::Tool => skill
+                .tool
+                .as_ref()
+                .map(|tool| {
+                    tool.name == TOOL_NAME
+                        || (enable_remote_search
+                            && tool.name == "duckduckgo_search"
+                            && !tool.requires_confirmation)
+                })
+                .unwrap_or(false),
         })
         .collect()
 }
@@ -386,8 +386,9 @@ fn remote_chat_skills() -> Vec<crate::models::SkillDefinition> {
 async fn execute_remote_tool(app: &AppHandle, tool_call: &ToolCallDto) -> Result<String, String> {
     match tool_call.function.name.as_str() {
         "duckduckgo_search" => {
-            let payload: DuckDuckGoToolArguments = serde_json::from_str(&tool_call.function.arguments)
-                .map_err(|error| format!("Invalid duckduckgo_search arguments: {error}"))?;
+            let payload: DuckDuckGoToolArguments =
+                serde_json::from_str(&tool_call.function.arguments)
+                    .map_err(|error| format!("Invalid duckduckgo_search arguments: {error}"))?;
 
             let query = payload.query.trim().to_string();
             if query.is_empty() {
@@ -458,7 +459,10 @@ async fn run_remote_chat(
 
     for round in 0..MAX_REMOTE_TOOL_ROUNDS {
         let round_started_at = Instant::now();
-        push_event("info", format!("钉钉远程对话第 {} 轮开始请求模型。", round + 1));
+        push_event(
+            "info",
+            format!("钉钉远程对话第 {} 轮开始请求模型。", round + 1),
+        );
 
         let completion = stream_chat_completion(
             app,
@@ -572,10 +576,7 @@ fn should_send_processing_notice(text: &str) -> bool {
         return false;
     }
 
-    !(text == "/help"
-        || text == "/status"
-        || text == "/clear"
-        || text.starts_with("/mode "))
+    !(text == "/help" || text == "/status" || text == "/clear" || text.starts_with("/mode "))
 }
 
 async fn execute_remote_command(app: &AppHandle, command: &str) -> Result<String, String> {
@@ -584,8 +585,7 @@ async fn execute_remote_command(app: &AppHandle, command: &str) -> Result<String
 
     if !parse_bool_env(DINGTALK_ENABLE_REMOTE_COMMANDS_ENV) {
         return Err(
-            "远程命令执行未开启，请先设置 DINGTALK_ENABLE_REMOTE_COMMANDS=true。"
-                .to_string(),
+            "远程命令执行未开启，请先设置 DINGTALK_ENABLE_REMOTE_COMMANDS=true。".to_string(),
         );
     }
 
@@ -601,8 +601,7 @@ async fn execute_remote_command(app: &AppHandle, command: &str) -> Result<String
     let prefixes = remote_command_prefixes();
     if prefixes.is_empty() {
         return Err(
-            "未配置允许的远程命令前缀，请设置 DINGTALK_ALLOWED_COMMAND_PREFIXES。"
-                .to_string(),
+            "未配置允许的远程命令前缀，请设置 DINGTALK_ALLOWED_COMMAND_PREFIXES。".to_string(),
         );
     }
 
@@ -733,8 +732,8 @@ async fn build_reply_for_message(
     }
 
     if let Some(value) = text.strip_prefix("/mode ") {
-        let mode = parse_agent_mode(value)
-            .ok_or_else(|| "Mode must be online or local.".to_string())?;
+        let mode =
+            parse_agent_mode(value).ok_or_else(|| "Mode must be online or local.".to_string())?;
         set_mode(mode);
         return Ok(format!("Remote mode switched to {}.", mode.label()));
     }
@@ -966,22 +965,23 @@ async fn read_worker_stdout(
                             .unwrap_or("DingTalk worker error");
                         push_event("error", message.to_string());
                     }
-                    "incoming_message" => match serde_json::from_value::<IncomingDingTalkMessage>(payload)
-                    {
-                        Ok(message) => {
-                            tokio::spawn(handle_incoming_message(
-                                app.clone(),
-                                stdin.clone(),
-                                message,
-                            ));
+                    "incoming_message" => {
+                        match serde_json::from_value::<IncomingDingTalkMessage>(payload) {
+                            Ok(message) => {
+                                tokio::spawn(handle_incoming_message(
+                                    app.clone(),
+                                    stdin.clone(),
+                                    message,
+                                ));
+                            }
+                            Err(error) => {
+                                push_event(
+                                    "error",
+                                    format!("解析 incoming DingTalk message 失败：{error}"),
+                                );
+                            }
                         }
-                        Err(error) => {
-                            push_event(
-                                "error",
-                                format!("解析 incoming DingTalk message 失败：{error}"),
-                            );
-                        }
-                    },
+                    }
                     other => {
                         push_event("warn", format!("未知的 DingTalk worker 事件：{other}"));
                     }
@@ -1054,9 +1054,7 @@ pub(crate) async fn start_service(app: &AppHandle) -> Result<DingTalkStatus, Str
     }
 
     let script_path = dingtalk_script_path().ok_or_else(|| {
-        format!(
-            "未找到 DingTalk worker 脚本：{DINGTALK_STREAM_SCRIPT_RELATIVE_PATH}"
-        )
+        format!("未找到 DingTalk worker 脚本：{DINGTALK_STREAM_SCRIPT_RELATIVE_PATH}")
     })?;
 
     let client_id = read_env_var(DINGTALK_CLIENT_ID_ENV)
@@ -1122,7 +1120,11 @@ pub(crate) async fn start_service(app: &AppHandle) -> Result<DingTalkStatus, Str
         format!("已启动 DingTalk worker：{}", script_path.display()),
     );
 
-    tokio::spawn(read_worker_stdout(app.clone(), runtime.stdin.clone(), stdout));
+    tokio::spawn(read_worker_stdout(
+        app.clone(),
+        runtime.stdin.clone(),
+        stdout,
+    ));
     tokio::spawn(read_worker_stderr(stderr));
 
     Ok(status_snapshot())

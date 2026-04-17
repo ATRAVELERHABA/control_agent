@@ -50,7 +50,8 @@ fn sanitize_account_email(account_email: &str) -> Result<String, String> {
 }
 
 pub fn payload_bytes(payload: &LicensePayload) -> Result<Vec<u8>, String> {
-    serde_json::to_vec(payload).map_err(|error| format!("Failed to serialize license payload: {error}"))
+    serde_json::to_vec(payload)
+        .map_err(|error| format!("Failed to serialize license payload: {error}"))
 }
 
 pub fn sha256_base64(bytes: &[u8]) -> String {
@@ -111,7 +112,10 @@ pub fn issue_license(
     })
 }
 
-pub fn verify_license_document(document: &LicenseDocument, public_key: &VerifyingKey) -> Result<(), String> {
+pub fn verify_license_document(
+    document: &LicenseDocument,
+    public_key: &VerifyingKey,
+) -> Result<(), String> {
     if document.payload.schema_version != LICENSE_SCHEMA_VERSION {
         return Err(format!(
             "Unsupported license schema version: {}",

@@ -8,13 +8,13 @@ use crate::{
         clear_license as clear_license_state, ensure_license_valid,
         get_license_status as read_license_status, import_license as import_license_file,
     },
+    assets::register_asset as store_asset,
+    audio::transcribe_audio,
     auth::{
         clear_session, ensure_authenticated, get_current_user as read_current_user,
         get_session_status as read_session_status, login as login_local_account,
         logout as logout_local_account, register_account as register_local_account,
     },
-    assets::register_asset as store_asset,
-    audio::transcribe_audio,
     command_runner::execute_shell_command,
     constants::TOOL_NAME,
     dingtalk::{
@@ -23,16 +23,25 @@ use crate::{
     },
     env::{load_backend_env_once, load_provider_config, provider_status},
     events::emit_stream_event,
+    history::{
+        append_conversation_messages as persist_conversation_messages,
+        create_conversation as create_history_conversation,
+        delete_conversation as delete_history_conversation,
+        get_conversation_messages as load_history_conversation_messages,
+        list_conversation_summaries as load_history_conversation_summaries,
+    },
     llm::{parse_tool_command, stream_chat_completion},
     logging::{log_error, log_info, preview_text},
     models::{
         AgentMode, AgentStreamEvent, AgentTurnRequest, AgentTurnResult, AnalyzeImageRequest,
-        AssetSummary, BackendModeStatuses, ConversationMessageDto, CurrentUser, DingTalkStatus,
+        AppendConversationMessagesRequest, AssetSummary, BackendModeStatuses,
+        ConversationMessageDto, ConversationMessagesRequest, ConversationSummary,
+        CreateConversationRequest, CurrentUser, DeleteConversationRequest, DingTalkStatus,
         ImportLicenseRequest, ImportLicenseResult, LicenseStatus, LoginRequest,
         RegisterAccountRequest, RegisterAssetRequest, RunCommandRequest,
         RunDuckDuckGoSearchRequest, SessionStatus, SkillSummary, SystemPromptSettings,
-        TranscribeAudioRequest, UpdateSkillEnabledRequest,
-        UpdateSkillRequiresConfirmationRequest, UpdateSystemPromptSettingsRequest,
+        TranscribeAudioRequest, UpdateSkillEnabledRequest, UpdateSkillRequiresConfirmationRequest,
+        UpdateSystemPromptSettingsRequest,
     },
     search::execute_duckduckgo_search,
     settings::{
@@ -126,6 +135,50 @@ fn get_backend_mode_statuses(app: AppHandle) -> Result<BackendModeStatuses, Stri
 }
 
 /// 读取技能摘要列表。
+#[tauri::command]
+fn get_conversation_summaries(app: AppHandle) -> Result<Vec<ConversationSummary>, String> {
+    ensure_license_valid(&app)?;
+    let current_user = ensure_authenticated(&app)?;
+    load_history_conversation_summaries(&app, &current_user.email)
+}
+
+#[tauri::command]
+fn create_conversation(
+    app: AppHandle,
+    request: CreateConversationRequest,
+) -> Result<ConversationSummary, String> {
+    ensure_license_valid(&app)?;
+    let current_user = ensure_authenticated(&app)?;
+    create_history_conversation(&app, &current_user.email, request)
+}
+
+#[tauri::command]
+fn get_conversation_messages(
+    app: AppHandle,
+    request: ConversationMessagesRequest,
+) -> Result<Vec<ConversationMessageDto>, String> {
+    ensure_license_valid(&app)?;
+    let current_user = ensure_authenticated(&app)?;
+    load_history_conversation_messages(&app, &current_user.email, request)
+}
+
+#[tauri::command]
+fn append_conversation_messages(
+    app: AppHandle,
+    request: AppendConversationMessagesRequest,
+) -> Result<ConversationSummary, String> {
+    ensure_license_valid(&app)?;
+    let current_user = ensure_authenticated(&app)?;
+    persist_conversation_messages(&app, &current_user.email, request)
+}
+
+#[tauri::command]
+fn delete_conversation(app: AppHandle, request: DeleteConversationRequest) -> Result<(), String> {
+    ensure_license_valid(&app)?;
+    let current_user = ensure_authenticated(&app)?;
+    delete_history_conversation(&app, &current_user.email, request)
+}
+
 #[tauri::command]
 fn get_skill_summaries(app: AppHandle) -> Result<Vec<SkillSummary>, String> {
     ensure_license_valid(&app)?;
@@ -333,10 +386,7 @@ async fn run_duckduckgo_search(
 
 /// 执行一次图像识别。
 #[tauri::command]
-async fn run_analyze_image(
-    app: AppHandle,
-    request: AnalyzeImageRequest,
-) -> Result<String, String> {
+async fn run_analyze_image(app: AppHandle, request: AnalyzeImageRequest) -> Result<String, String> {
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
     analyze_image(request).await
@@ -381,6 +431,11 @@ pub fn run() {
             start_dingtalk_bot,
             stop_dingtalk_bot,
             get_backend_mode_statuses,
+            get_conversation_summaries,
+            create_conversation,
+            get_conversation_messages,
+            append_conversation_messages,
+            delete_conversation,
             get_skill_summaries,
             update_skill_enabled,
             update_skill_requires_confirmation,
