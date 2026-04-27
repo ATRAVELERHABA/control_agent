@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>登录页面临时截图</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="screen-root">
+      <div class="app-window">
+        <div class="window-bar">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="bar-title">HZCUclaw Desktop · 登录</span>
+        </div>
+        <div class="auth-layout">
+          <section class="hero-panel">
+            <div class="badge">
+              <span class="feature-dot"></span>
+              HZCUclaw 桌面端工作区
+            </div>
+            <div class="hero-kicker">Licensed Workspace</div>
+            <div class="hero-title">
+              桌面端 AI 助手
+              <br />
+              由许可证与账号
+              <br />
+              共同保护
+            </div>
+            <div class="hero-text">
+              当前系统采用本地离线许可证与账号绑定的双重准入机制。用户在完成许可证导入后，
+              才能进入登录工作区，随后使用匹配邮箱进行本地登录与会话恢复。
+            </div>
+
+            <div class="feature-list">
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                本地许可证优先校验，未授权状态下无法进入主功能区
+              </div>
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                登录邮箱必须与许可证中的授权账号保持一致
+              </div>
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                在线与本地模式共享同一套安全入口与会话管理逻辑
+              </div>
+            </div>
+          </section>
+
+          <section class="form-panel">
+            <div class="card">
+              <h1>登录</h1>
+              <p>请输入与许可证绑定一致的邮箱与密码，以进入桌面 AI 助手工作区。</p>
+
+              <div class="segment">
+                <button class="active">登录</button>
+                <button class="ghost">注册</button>
+              </div>
+
+              <div class="alert alert-success">
+                当前设备已检测到有效许可证，可继续执行本地账号登录。
+              </div>
+
+              <label class="label">邮箱</label>
+              <input class="input" value="demo@example.com" />
+
+              <div style="height: 14px"></div>
+
+              <label class="label">密码</label>
+              <input class="input" value="********" />
+
+              <button class="primary-btn">登录并进入桌面</button>
+
+              <div class="card-foot">
+                本地账号信息仅保存在当前设备中。退出登录会清除当前会话，但不会删除已导入的许可证数据。
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

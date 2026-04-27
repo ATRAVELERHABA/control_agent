@@ -70,6 +70,7 @@ import {
   parseAnalyzeImageArguments,
   parseDuckDuckGoSearchArguments,
   parseExecuteTerminalCommandArguments,
+  parseReadWebPageArguments,
   parseTranscribeAudioArguments,
   type AnalyzeImageRequest,
   type AgentMode,
@@ -84,6 +85,7 @@ import {
   type ImportLicenseResult,
   type LicenseStatus,
   type LoginRequest,
+  type ReadWebPageRequest,
   type RegisterAccountRequest,
   type RegisterAssetRequest,
   type RunCommandRequest,
@@ -1494,6 +1496,124 @@ export default function App() {
           setMessages((current) =>
             current.map((message) =>
               message.id === searchMessageId
+                ? {
+                    ...message,
+                    content: toolOutput,
+                    status: "error",
+                  }
+                : message,
+            ),
+          );
+
+          return toolOutput;
+        }
+      }
+      case "read_webpage": {
+        const { url, maxChars } = parseReadWebPageArguments(
+          toolCall.function.arguments,
+        );
+        const webpageMessageId = createClientId("webpage");
+
+        setMessages((current) => [
+          ...current,
+          createUiMessage(
+            "tool-call",
+            "网页阅读",
+            `网址：${url}${typeof maxChars === "number" ? `\n最大字符数：${maxChars}` : ""}`,
+          ),
+          {
+            id: webpageMessageId,
+            kind: "tool-result",
+            title: "网页内容",
+            content: "",
+            status: "streaming",
+          },
+        ]);
+        setRuntimeNotice(`正在读取网页：${url}`);
+
+        try {
+          const output = await invoke<string>("run_read_webpage", {
+            request: {
+              url,
+              ...(typeof maxChars === "number" ? { maxChars } : {}),
+            } satisfies ReadWebPageRequest,
+          });
+          const toolOutput = output.trim()
+            ? output
+            : "(网页读取成功，但没有返回正文)";
+
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === webpageMessageId
+                ? {
+                    ...message,
+                    content: toolOutput,
+                    status: "completed",
+                  }
+                : message,
+            ),
+          );
+
+          return toolOutput;
+        } catch (error) {
+          const toolOutput = `网页读取失败：\n${formatUnknownError(error)}`;
+
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === webpageMessageId
+                ? {
+                    ...message,
+                    content: toolOutput,
+                    status: "error",
+                  }
+                : message,
+            ),
+          );
+
+          return toolOutput;
+        }
+      }
+      case "get_current_system_time": {
+        const timeMessageId = createClientId("system-time");
+
+        setMessages((current) => [
+          ...current,
+          createUiMessage("tool-call", "系统时间", "读取当前设备系统时间"),
+          {
+            id: timeMessageId,
+            kind: "tool-result",
+            title: "系统时间",
+            content: "",
+            status: "streaming",
+          },
+        ]);
+        setRuntimeNotice("正在读取系统时间");
+
+        try {
+          const output = await invoke<string>("run_get_current_system_time");
+          const toolOutput = output.trim()
+            ? output
+            : "(系统时间读取成功，但没有返回内容)";
+
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === timeMessageId
+                ? {
+                    ...message,
+                    content: toolOutput,
+                    status: "completed",
+                  }
+                : message,
+            ),
+          );
+
+          return toolOutput;
+        } catch (error) {
+          const toolOutput = `系统时间读取失败：\n${formatUnknownError(error)}`;
+
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === timeMessageId
                 ? {
                     ...message,
                     content: toolOutput,

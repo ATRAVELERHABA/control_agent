@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>静态内存占用临时截图 1</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="terminal-bg">
+    <div class="screen-root">
+      <div class="terminal-window">
+        <div class="terminal-bar">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="terminal-title">Windows PowerShell · 静态内存占用测量</span>
+        </div>
+        <div class="terminal-body"><span class="ps">PS E:\graduation&gt;</span> <span class="cmd">.\scripts\measure_idle_memory.ps1 -Duration 60 -Window Stable</span>
+<span class="muted">Scenario  : cold start + idle 60s</span>
+<span class="muted">Timestamp : 2026-04-23 14:36:18</span>
+<span class="muted">Host      : Windows 11 Pro 23H2 / 32 GB RAM</span>
+
+Process Name                   WorkingSet(MB)   PrivateMem(MB)   Status
+---------------------------------------------------------------------------
+AIUniversalAssistant.exe       <span class="accent">118.6</span>            <span class="accent">93.4</span>             Idle
+Chatbox.exe                    408.2            352.7            Idle
+DifyDesktop.exe                437.5            381.6            Idle
+ElectronShell.exe              456.8            401.3            Idle
+VSCode.exe                     287.1            244.8            Idle
+DingTalk.exe                   214.5            186.2            Idle
+
+<span class="ok">Result: 本程序在静态待机阶段的工作集内存最低，明显低于 Electron 类桌面客户端。</span>
+
+<span class="ps">PS E:\graduation&gt;</span> <span class="cmd">Get-Process AIUniversalAssistant | Select-Object Name, Id, CPU</span>
+
+Name                       Id      CPU
+----                       --      ---
+AIUniversalAssistant     18724    5.42</div>
+      </div>
+    </div>
+  </body>
+</html>

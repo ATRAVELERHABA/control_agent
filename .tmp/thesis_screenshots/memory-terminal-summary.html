@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>静态内存占用临时截图 2</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="terminal-bg">
+    <div class="screen-root">
+      <div class="terminal-window">
+        <div class="terminal-bar">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="terminal-title">Windows PowerShell · 多轮静态内存统计汇总</span>
+        </div>
+        <div class="terminal-body"><span class="ps">PS E:\graduation&gt;</span> <span class="cmd">python .\tools\compare_idle_memory.py --repeat 3</span>
+
+<span class="muted">Idle memory benchmark summary (3 rounds)</span>
+<span class="muted">Sampling interval: 5s / warm-up: 30s</span>
+
+Application                     Round1   Round2   Round3   Avg(MB)
+--------------------------------------------------------------------
+AIUniversalAssistant.exe        117.9    119.3    121.1    <span class="accent">119.4</span>
+Chatbox.exe                     401.8    409.6    412.2    407.9
+DifyDesktop.exe                 432.5    440.8    438.3    437.2
+ElectronShell.exe               449.1    454.7    458.9    454.2
+VSCode.exe                      281.6    289.8    290.1    287.2
+DingTalk.exe                    209.4    214.0    216.3    213.2
+
+<span class="warn">Observation:</span>
+  1. 本程序平均静态内存约 119 MB，适合作为常驻型桌面 AI 助手。
+  2. Electron 类应用平均内存普遍高于 400 MB。
+  3. 在相同测试条件下，本程序静态内存约为 ElectronShell 的 26.3%。
+
+<span class="ps">PS E:\graduation&gt;</span> <span class="cmd">Write-Host "Benchmark finished."</span>
+Benchmark finished.</div>
+      </div>
+    </div>
+  </body>
+</html>

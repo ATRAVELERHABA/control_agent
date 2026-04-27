@@ -1,0 +1,31 @@
+{
+  "id": "read-webpage",
+  "name": "读取网页",
+  "description": "允许模型读取指定网址的公开网页内容，并提取标题、摘要和正文文本。",
+  "type": "tool",
+  "enabled": true,
+  "tool": {
+    "name": "read_webpage",
+    "description": "读取公开网页内容。适用于用户直接给出网址，或先搜索到结果后继续打开具体网页查看正文。",
+    "requires_confirmation": false,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "要读取的网页 URL，必须是 http 或 https 链接。"
+        },
+        "maxChars": {
+          "type": "integer",
+          "description": "返回正文的最大字符数，范围 1000 到 20000，默认 8000。",
+          "minimum": 1000,
+          "maximum": 20000
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

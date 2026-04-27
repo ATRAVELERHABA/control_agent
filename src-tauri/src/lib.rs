@@ -16,10 +16,13 @@ mod llm;
 mod logging;
 mod models;
 mod python;
+mod runtime_paths;
 mod search;
 mod settings;
 mod skills;
+mod system_time;
 mod vision;
+mod webpage;
 
 #[cfg(test)]
 mod tests;

@@ -1,0 +1,17 @@
+{
+  "id": "get-current-system-time",
+  "name": "获取系统时间",
+  "description": "允许模型读取当前设备的本地系统时间、UTC 时间和时区偏移。",
+  "type": "tool",
+  "enabled": true,
+  "tool": {
+    "name": "get_current_system_time",
+    "description": "获取当前设备系统时间。适用于用户询问现在几点、当前日期、时区时间等场景。",
+    "requires_confirmation": false,
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
+}

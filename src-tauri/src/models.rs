@@ -185,6 +185,33 @@ pub(crate) struct BackendModeStatuses {
 }
 
 /// 本地许可证状态。
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct BackendEnvStatus {
+    pub(crate) env_file_exists: bool,
+    pub(crate) app_data_dir: String,
+    pub(crate) env_file_path: String,
+    pub(crate) env_example_path: String,
+    pub(crate) env_example_contents: String,
+    pub(crate) supported_keys: Vec<String>,
+    pub(crate) message: String,
+    pub(crate) mode_statuses: BackendModeStatuses,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ImportBackendEnvRequest {
+    pub(crate) file_name: String,
+    pub(crate) contents: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ImportBackendEnvResult {
+    pub(crate) imported: bool,
+    pub(crate) status: BackendEnvStatus,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct LicenseStatus {
@@ -347,6 +374,14 @@ pub(crate) struct RunDuckDuckGoSearchRequest {
 }
 
 /// 表示用户上传或粘贴进对话的附件类型。
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ReadWebPageRequest {
+    pub(crate) url: String,
+    #[serde(default)]
+    pub(crate) max_chars: Option<u32>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum AssetKind {

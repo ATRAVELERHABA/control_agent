@@ -22,6 +22,23 @@
     }
   },
   "bundle": {
-    "active": false
+    "active": true,
+    "targets": ["nsis"],
+    "resources": {
+      "./bundled-resources/.skills/": ".skills/",
+      "./bundled-resources/control_agent/scripts/": "control_agent/scripts/",
+      "./bundled-resources/control_agent/site-packages/": "control_agent/site-packages/",
+      "./bundled-resources/python-runtime/": "python-runtime/",
+      "./bundled-resources/.env.example": ".env.example"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
   }
 }

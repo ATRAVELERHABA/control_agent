@@ -36,6 +36,24 @@ input {
   font: inherit;
 }
 
+/* 全局按钮悬浮/按下时的动画微交互反馈，使前端更灵动 */
+button,
+.ant-btn {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease !important;
+}
+
+button:not(:disabled):hover,
+.ant-btn:not(:disabled):hover {
+  transform: translateY(-1px) scale(1.02) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+button:not(:disabled):active,
+.ant-btn:not(:disabled):active {
+  transform: translateY(0) scale(0.97) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
 /* 根节点撑满窗口高度，方便主容器使用 flex 居中。 */
 #root {
   min-height: 100vh;

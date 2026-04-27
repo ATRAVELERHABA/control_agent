@@ -8,6 +8,10 @@ A desktop graduation project built with Tauri v2, React, Tailwind CSS, and Rust.
 - `npm run dev`: start the Vite dev server
 - `npm run tauri dev`: start the desktop app in development mode
 - `npm run build`: build the frontend
+- `npm run tauri:build:installer`: build the current Windows NSIS installer
+- `npm run tauri:build:linux`: build Linux bundles with the auto-loaded `src-tauri/tauri.linux.conf.json`
+- `npm run tauri:build:linux:deb`: build only the Linux `.deb` bundle
+- `npm run tauri:build:linux:appimage`: build only the Linux `.appimage` bundle
 
 ## First Feature
 
@@ -86,8 +90,9 @@ See `.skills/README.md` for the full structure.
 The DuckDuckGo tool is implemented by `control_agent/scripts/duckduckgo_search_tool.py`.
 
 - Create a project-local virtualenv with `python -m venv control_agent/.venv`
-- Install the dependency with `control_agent/.venv/Scripts/python -m pip install -r control_agent/requirements.txt`
-- The backend now prefers `control_agent/.venv/Scripts/python.exe` when it exists
+- Install the dependency with `control_agent/.venv/Scripts/python -m pip install -r control_agent/requirements.txt` on Windows
+- Install the dependency with `control_agent/.venv/bin/python -m pip install -r control_agent/requirements.txt` on Linux
+- The backend now prefers `control_agent/.venv/Scripts/python.exe` on Windows and `control_agent/.venv/bin/python` on Linux
 - The script prefers the renamed `ddgs` package and also supports the legacy `duckduckgo_search` import path
 
 ## Offline License Activation
@@ -127,7 +132,15 @@ The project now includes an experimental DingTalk Stream Mode relay so the deskt
 ### Install Python dependencies
 
 - Create a local virtualenv: `python -m venv control_agent/.venv`
-- Install helper dependencies: `control_agent/.venv/Scripts/python -m pip install -r control_agent/requirements.txt`
+- Install helper dependencies on Windows: `control_agent/.venv/Scripts/python -m pip install -r control_agent/requirements.txt`
+- Install helper dependencies on Linux: `control_agent/.venv/bin/python -m pip install -r control_agent/requirements.txt`
+
+## Linux Packaging Notes
+
+- Tauri v2 will automatically merge `src-tauri/tauri.linux.conf.json` when you run Linux builds.
+- The Linux bundle flow copies `.skills`, `control_agent/scripts`, `.env.example`, and Linux `site-packages` into `src-tauri/bundled-resources`.
+- If you want to ship a bundled Linux Python runtime, set `EMBEDDED_PYTHON_HOME` or `LINUX_EMBEDDED_PYTHON_HOME` before building.
+- If no embedded Linux Python runtime is provided, the packaged app falls back to `python3` or `python` on the target system.
 
 ### Required `.env` values
 

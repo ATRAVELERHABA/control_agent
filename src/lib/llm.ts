@@ -46,6 +46,11 @@ export interface RunDuckDuckGoSearchRequest {
   maxResults?: number;
 }
 
+export interface ReadWebPageRequest {
+  url: string;
+  maxChars?: number;
+}
+
 export type AssetKind = "image" | "audio";
 
 export interface AssetSummary {
@@ -85,6 +90,27 @@ export interface BackendModeStatus {
 export interface BackendModeStatuses {
   online: BackendModeStatus;
   local: BackendModeStatus;
+}
+
+export interface BackendEnvStatus {
+  envFileExists: boolean;
+  appDataDir: string;
+  envFilePath: string;
+  envExamplePath: string;
+  envExampleContents: string;
+  supportedKeys: string[];
+  message: string;
+  modeStatuses: BackendModeStatuses;
+}
+
+export interface ImportBackendEnvRequest {
+  fileName: string;
+  contents: string;
+}
+
+export interface ImportBackendEnvResult {
+  imported: boolean;
+  status: BackendEnvStatus;
 }
 
 export interface LicenseStatus {
@@ -331,6 +357,37 @@ export function parseDuckDuckGoSearchArguments(argumentsText: string): {
   const maxResults = Math.min(10, Math.max(1, Math.trunc(rawMaxResults)));
 
   return { query, maxResults };
+}
+
+export function parseReadWebPageArguments(argumentsText: string): {
+  url: string;
+  maxChars?: number;
+} {
+  const parsed = parseToolArgumentsObject(argumentsText);
+
+  if (typeof parsed.url !== "string") {
+    throw new Error("Tool arguments are missing a valid url field.");
+  }
+
+  const url = parsed.url.trim();
+
+  if (!url) {
+    throw new Error("Tool argument url cannot be empty.");
+  }
+
+  const rawMaxChars =
+    typeof parsed.maxChars === "number"
+      ? parsed.maxChars
+      : typeof parsed.max_chars === "number"
+        ? parsed.max_chars
+        : undefined;
+
+  const maxChars =
+    typeof rawMaxChars === "number" && Number.isFinite(rawMaxChars)
+      ? Math.min(20000, Math.max(1000, Math.trunc(rawMaxChars)))
+      : undefined;
+
+  return { url, ...(typeof maxChars === "number" ? { maxChars } : {}) };
 }
 
 export function parseAnalyzeImageArguments(argumentsText: string): {

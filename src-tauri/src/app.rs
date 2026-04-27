@@ -1,4 +1,6 @@
-//! 负责 Tauri 命令注册与后端高层工作流编排。
+//! Tauri command registration and high-level backend workflows.
+
+use std::io::Error;
 
 use reqwest::Client;
 use tauri::AppHandle;
@@ -21,7 +23,11 @@ use crate::{
         get_status as read_dingtalk_status, start_service as start_dingtalk_service,
         stop_service as stop_dingtalk_service,
     },
-    env::{load_backend_env_once, load_provider_config, provider_status},
+    env::{
+        ensure_env_example_in_app_data, get_backend_env_status as read_backend_env_status,
+        import_backend_env as write_backend_env_file, load_backend_env_once, load_provider_config,
+        provider_status,
+    },
     events::emit_stream_event,
     history::{
         append_conversation_messages as persist_conversation_messages,
@@ -34,28 +40,30 @@ use crate::{
     logging::{log_error, log_info, preview_text},
     models::{
         AgentMode, AgentStreamEvent, AgentTurnRequest, AgentTurnResult, AnalyzeImageRequest,
-        AppendConversationMessagesRequest, AssetSummary, BackendModeStatuses,
+        AppendConversationMessagesRequest, AssetSummary, BackendEnvStatus, BackendModeStatuses,
         ConversationMessageDto, ConversationMessagesRequest, ConversationSummary,
         CreateConversationRequest, CurrentUser, DeleteConversationRequest, DingTalkStatus,
-        ImportLicenseRequest, ImportLicenseResult, LicenseStatus, LoginRequest,
-        RegisterAccountRequest, RegisterAssetRequest, RunCommandRequest,
-        RunDuckDuckGoSearchRequest, SessionStatus, SkillSummary, SystemPromptSettings,
-        TranscribeAudioRequest, UpdateSkillEnabledRequest, UpdateSkillRequiresConfirmationRequest,
-        UpdateSystemPromptSettingsRequest,
+        ImportBackendEnvRequest, ImportBackendEnvResult, ImportLicenseRequest, ImportLicenseResult,
+        LicenseStatus, LoginRequest, ReadWebPageRequest, RegisterAccountRequest,
+        RegisterAssetRequest, RunCommandRequest, RunDuckDuckGoSearchRequest, SessionStatus,
+        SkillSummary, SystemPromptSettings, TranscribeAudioRequest, UpdateSkillEnabledRequest,
+        UpdateSkillRequiresConfirmationRequest, UpdateSystemPromptSettingsRequest,
     },
+    runtime_paths,
     search::execute_duckduckgo_search,
     settings::{
         get_system_prompt_settings as read_system_prompt_settings,
         update_system_prompt_settings as write_system_prompt_settings,
     },
     skills::{
-        load_skill_definitions, load_skill_summaries, set_skill_enabled,
+        ensure_skill_store, load_skill_definitions, load_skill_summaries, set_skill_enabled,
         set_skill_requires_confirmation,
     },
+    system_time::get_current_system_time,
     vision::analyze_image,
+    webpage::read_webpage,
 };
 
-/// 读取两种后端模式的当前配置状态。
 #[tauri::command]
 fn get_license_status(app: AppHandle) -> Result<LicenseStatus, String> {
     read_license_status(&app)
@@ -127,14 +135,30 @@ async fn stop_dingtalk_bot(app: AppHandle) -> Result<DingTalkStatus, String> {
 fn get_backend_mode_statuses(app: AppHandle) -> Result<BackendModeStatuses, String> {
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
-    log_info("前端请求读取后端模式状态。");
+    log_info("Frontend requested backend mode status.");
     Ok(BackendModeStatuses {
         online: provider_status(AgentMode::Online),
         local: provider_status(AgentMode::Local),
     })
 }
 
-/// 读取技能摘要列表。
+#[tauri::command]
+fn get_backend_env_status(app: AppHandle) -> Result<BackendEnvStatus, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    read_backend_env_status()
+}
+
+#[tauri::command]
+fn import_backend_env(
+    app: AppHandle,
+    request: ImportBackendEnvRequest,
+) -> Result<ImportBackendEnvResult, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    write_backend_env_file(request)
+}
+
 #[tauri::command]
 fn get_conversation_summaries(app: AppHandle) -> Result<Vec<ConversationSummary>, String> {
     ensure_license_valid(&app)?;
@@ -183,11 +207,10 @@ fn delete_conversation(app: AppHandle, request: DeleteConversationRequest) -> Re
 fn get_skill_summaries(app: AppHandle) -> Result<Vec<SkillSummary>, String> {
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
-    log_info("前端请求读取技能列表。");
+    log_info("Frontend requested skill summaries.");
     Ok(load_skill_summaries())
 }
 
-/// 更新单个技能的启用状态。
 #[tauri::command]
 fn update_skill_enabled(
     app: AppHandle,
@@ -196,7 +219,7 @@ fn update_skill_enabled(
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
     log_info(format!(
-        "前端请求更新技能开关，id={}, enabled={}",
+        "Frontend updated skill enabled state, id={}, enabled={}",
         request.skill_id, request.enabled
     ));
     set_skill_enabled(&request.skill_id, request.enabled)
@@ -210,18 +233,17 @@ fn update_skill_requires_confirmation(
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
     log_info(format!(
-        "前端请求更新技能确认要求，id={}, requires_confirmation={}",
+        "Frontend updated skill confirmation state, id={}, requires_confirmation={}",
         request.skill_id, request.requires_confirmation
     ));
     set_skill_requires_confirmation(&request.skill_id, request.requires_confirmation)
 }
 
-/// 注册一份前端上传的附件，生成可供工具调用的 `asset_id`。
 #[tauri::command]
 fn get_system_prompt_settings(app: AppHandle) -> Result<SystemPromptSettings, String> {
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
-    log_info("前端请求读取系统提示词设置。");
+    log_info("Frontend requested system prompt settings.");
     read_system_prompt_settings(&app)
 }
 
@@ -233,7 +255,7 @@ fn update_system_prompt_settings(
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
     log_info(format!(
-        "前端请求更新系统提示词设置，chars={}",
+        "Frontend updated system prompt settings, chars={}",
         request.custom_prompt.chars().count()
     ));
     write_system_prompt_settings(&app, request)
@@ -244,7 +266,7 @@ fn register_asset(app: AppHandle, request: RegisterAssetRequest) -> Result<Asset
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
     log_info(format!(
-        "前端请求注册附件，file_name={}, mime_type={}, bytes={}",
+        "Frontend registered asset, file_name={}, mime_type={}, bytes={}",
         request.file_name,
         request.mime_type,
         request.bytes.len()
@@ -252,7 +274,6 @@ fn register_asset(app: AppHandle, request: RegisterAssetRequest) -> Result<Asset
     store_asset(request)
 }
 
-/// 执行一轮模型推理，并在需要时返回工具调用。
 #[tauri::command]
 async fn run_agent_turn(
     app: AppHandle,
@@ -261,22 +282,18 @@ async fn run_agent_turn(
     ensure_license_valid(&app)?;
     ensure_authenticated(&app)?;
     log_info(format!(
-        "开始执行代理轮次，stream_id={}, mode={}, input_messages={}",
+        "Starting agent turn, stream_id={}, mode={}, input_messages={}",
         request.stream_id,
         request.mode.label(),
         request.messages.len()
     ));
+
     let config = load_provider_config(request.mode)?;
     let skills = load_skill_definitions();
     let client = Client::builder()
         .build()
-        .map_err(|error| format!("创建 HTTP 客户端失败：{error}"))?;
+        .map_err(|error| format!("Failed to build HTTP client: {error}"))?;
 
-    log_info(format!(
-        "执行单轮模型推理，stream_id={}, input_messages={}",
-        request.stream_id,
-        request.messages.len()
-    ));
     let completion = stream_chat_completion(
         &app,
         &client,
@@ -304,7 +321,7 @@ async fn run_agent_turn(
 
     if completion.tool_calls.is_empty() {
         log_info(format!(
-            "本轮模型未请求工具，stream_id={}, assistant_preview={}",
+            "Agent turn completed without tool calls, stream_id={}, assistant_preview={}",
             request.stream_id,
             preview_text(&completion.content, 200)
         ));
@@ -312,7 +329,7 @@ async fn run_agent_turn(
             &app,
             AgentStreamEvent::Status {
                 stream_id: request.stream_id.clone(),
-                message: "本轮对话已完成。".to_string(),
+                message: "This turn is complete.".to_string(),
             },
         )?;
     } else {
@@ -321,8 +338,9 @@ async fn run_agent_turn(
             .iter()
             .map(|tool_call| tool_call.function.name.clone())
             .collect::<Vec<_>>();
+
         log_info(format!(
-            "模型请求调用工具，stream_id={}, tools={}",
+            "Model requested tools, stream_id={}, tools={}",
             request.stream_id,
             requested_tools.join(", ")
         ));
@@ -334,10 +352,6 @@ async fn run_agent_turn(
 
             match parse_tool_command(&tool_call.function.arguments) {
                 Ok(command) => {
-                    log_info(format!(
-                        "模型请求前端确认执行命令，stream_id={}, command={}",
-                        request.stream_id, command
-                    ));
                     emit_stream_event(
                         &app,
                         AgentStreamEvent::ToolCall {
@@ -349,7 +363,7 @@ async fn run_agent_turn(
                 }
                 Err(error) => {
                     log_error(format!(
-                        "工具参数解析失败，stream_id={}, error={}",
+                        "Failed to parse tool command arguments, stream_id={}, error={}",
                         request.stream_id, error
                     ));
                 }
@@ -361,7 +375,7 @@ async fn run_agent_turn(
             AgentStreamEvent::Status {
                 stream_id: request.stream_id.clone(),
                 message: format!(
-                    "模型请求调用工具：{}，等待前端执行。",
+                    "Model requested tools: {}. Waiting for frontend execution.",
                     requested_tools.join(", ")
                 ),
             },
@@ -373,7 +387,6 @@ async fn run_agent_turn(
     })
 }
 
-/// 执行一次 DuckDuckGo 搜索。
 #[tauri::command]
 async fn run_duckduckgo_search(
     app: AppHandle,
@@ -384,7 +397,20 @@ async fn run_duckduckgo_search(
     execute_duckduckgo_search(request).await
 }
 
-/// 执行一次图像识别。
+#[tauri::command]
+async fn run_read_webpage(app: AppHandle, request: ReadWebPageRequest) -> Result<String, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    read_webpage(request).await
+}
+
+#[tauri::command]
+fn run_get_current_system_time(app: AppHandle) -> Result<String, String> {
+    ensure_license_valid(&app)?;
+    ensure_authenticated(&app)?;
+    Ok(get_current_system_time())
+}
+
 #[tauri::command]
 async fn run_analyze_image(app: AppHandle, request: AnalyzeImageRequest) -> Result<String, String> {
     ensure_license_valid(&app)?;
@@ -392,7 +418,6 @@ async fn run_analyze_image(app: AppHandle, request: AnalyzeImageRequest) -> Resu
     analyze_image(request).await
 }
 
-/// 执行一次音频转写。
 #[tauri::command]
 async fn run_transcribe_audio(
     app: AppHandle,
@@ -403,7 +428,6 @@ async fn run_transcribe_audio(
     transcribe_audio(request).await
 }
 
-/// 执行一次终端命令。
 #[tauri::command]
 async fn run_command(app: AppHandle, request: RunCommandRequest) -> Result<String, String> {
     ensure_license_valid(&app)?;
@@ -411,13 +435,21 @@ async fn run_command(app: AppHandle, request: RunCommandRequest) -> Result<Strin
     execute_shell_command(&app, request).await
 }
 
-/// 启动 Tauri 后端并注册全部命令。
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    load_backend_env_once();
-    log_info("Tauri 后端已启动，等待前端调用。");
+    log_info("Tauri backend started.");
 
     tauri::Builder::default()
+        .setup(|app| {
+            let app_handle = app.handle();
+
+            runtime_paths::initialize(&app_handle).map_err(Error::other)?;
+            ensure_env_example_in_app_data().map_err(Error::other)?;
+            ensure_skill_store().map_err(Error::other)?;
+            load_backend_env_once();
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_license_status,
             import_license,
@@ -431,6 +463,8 @@ pub fn run() {
             start_dingtalk_bot,
             stop_dingtalk_bot,
             get_backend_mode_statuses,
+            get_backend_env_status,
+            import_backend_env,
             get_conversation_summaries,
             create_conversation,
             get_conversation_messages,
@@ -444,6 +478,8 @@ pub fn run() {
             register_asset,
             run_agent_turn,
             run_duckduckgo_search,
+            run_read_webpage,
+            run_get_current_system_time,
             run_analyze_image,
             run_transcribe_audio,
             run_command

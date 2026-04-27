@@ -6,6 +6,8 @@ use crate::{
     llm::{build_chat_completions_url, parse_non_stream_completion_payload, parse_tool_command},
     models::{DuckDuckGoSearchPayload, DuckDuckGoSearchResult},
     search::format_duckduckgo_search_results,
+    system_time::format_system_time_output_for_test,
+    webpage::extract_html_content_for_test,
 };
 use serde_json::json;
 
@@ -118,4 +120,46 @@ fn aliyun_dashscope_fallback_constants_are_expected() {
         "https://dashscope.aliyuncs.com/compatible-mode/v1"
     );
     assert_eq!(ALIYUN_DASHSCOPE_MODEL, "qwen3-max");
+}
+
+#[test]
+fn extracts_readable_webpage_content() {
+    let html = r#"
+        <html>
+            <head>
+                <title>Example Article</title>
+                <meta name="description" content="A short summary." />
+            </head>
+            <body>
+                <main>
+                    <h1>Example Article</h1>
+                    <p>First paragraph.</p>
+                    <p>Second paragraph with more detail.</p>
+                </main>
+            </body>
+        </html>
+    "#;
+
+    let output = extract_html_content_for_test(
+        "https://example.com/article",
+        "text/html; charset=utf-8",
+        html,
+    );
+
+    assert!(output.contains("URL: https://example.com/article"));
+    assert!(output.contains("标题: Example Article"));
+    assert!(output.contains("摘要: A short summary."));
+    assert!(output.contains("First paragraph."));
+    assert!(output.contains("Second paragraph with more detail."));
+}
+
+#[test]
+fn formats_current_system_time_output() {
+    let output = format_system_time_output_for_test();
+
+    assert!(output.contains("Current system time"));
+    assert!(output.contains("Local time:"));
+    assert!(output.contains("UTC time:"));
+    assert!(output.contains("Unix timestamp:"));
+    assert!(output.contains("Timezone offset:"));
 }

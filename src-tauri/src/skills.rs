@@ -1,7 +1,7 @@
 //! Local skill discovery, loading, and enablement.
 
 use std::{
-    env, fs,
+    fs,
     path::{Path, PathBuf},
 };
 
@@ -9,6 +9,7 @@ use crate::{
     constants::{SKILLS_DIR_NAME, TOOL_NAME},
     logging::{log_error, log_info},
     models::{SkillDefinition, SkillSummary, SkillType},
+    runtime_paths::{app_data_dir, content_root_candidates},
 };
 
 #[derive(Debug, Clone)]
@@ -26,29 +27,12 @@ pub(crate) fn project_skills_dir() -> Option<PathBuf> {
         }
     };
 
-    if let Ok(current_dir) = env::current_dir() {
-        push_candidate(current_dir.join(SKILLS_DIR_NAME));
-
-        if let Some(parent) = current_dir.parent() {
-            push_candidate(parent.join(SKILLS_DIR_NAME));
-        }
+    if let Some(app_data_dir) = app_data_dir() {
+        push_candidate(app_data_dir.join(SKILLS_DIR_NAME));
     }
 
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    push_candidate(manifest_dir.join(SKILLS_DIR_NAME));
-
-    if let Some(parent) = manifest_dir.parent() {
-        push_candidate(parent.join(SKILLS_DIR_NAME));
-    }
-
-    if let Ok(executable_path) = env::current_exe() {
-        if let Some(executable_dir) = executable_path.parent() {
-            push_candidate(executable_dir.join(SKILLS_DIR_NAME));
-
-            if let Some(parent) = executable_dir.parent() {
-                push_candidate(parent.join(SKILLS_DIR_NAME));
-            }
-        }
+    for root in content_root_candidates() {
+        push_candidate(root.join(SKILLS_DIR_NAME));
     }
 
     if let Some(existing_dir) = candidates.iter().find(|candidate| candidate.exists()) {
@@ -59,46 +43,73 @@ pub(crate) fn project_skills_dir() -> Option<PathBuf> {
 }
 
 pub(crate) fn project_root_candidates() -> Vec<PathBuf> {
-    let mut candidates = Vec::<PathBuf>::new();
+    content_root_candidates()
+}
 
-    let mut push_candidate = |candidate: PathBuf| {
-        if !candidates.iter().any(|existing| existing == &candidate) {
-            candidates.push(candidate);
-        }
+fn copy_skill_file_if_missing(source: &Path, target: &Path) -> Result<(), String> {
+    if target.exists() {
+        return Ok(());
+    }
+
+    let contents = fs::read(source).map_err(|error| {
+        format!(
+            "Failed to read bundled skill file, path={}, error={error}",
+            source.display()
+        )
+    })?;
+    fs::write(target, contents).map_err(|error| {
+        format!(
+            "Failed to write local skill file, path={}, error={error}",
+            target.display()
+        )
+    })
+}
+
+pub(crate) fn ensure_skill_store() -> Result<(), String> {
+    let Some(app_data_dir) = app_data_dir() else {
+        return Ok(());
     };
 
-    if let Some(skills_dir) = project_skills_dir() {
-        if let Some(parent) = skills_dir.parent() {
-            push_candidate(parent.to_path_buf());
+    let target_dir = app_data_dir.join(SKILLS_DIR_NAME);
+    let source_dir = content_root_candidates()
+        .into_iter()
+        .map(|root| root.join(SKILLS_DIR_NAME))
+        .find(|candidate| candidate.exists() && candidate != &target_dir);
+
+    let Some(source_dir) = source_dir else {
+        return Ok(());
+    };
+
+    fs::create_dir_all(&target_dir)
+        .map_err(|error| format!("Failed to create local skills directory: {error}"))?;
+
+    let entries = fs::read_dir(&source_dir).map_err(|error| {
+        format!(
+            "Failed to read bundled skills directory, path={}, error={error}",
+            source_dir.display()
+        )
+    })?;
+
+    for entry in entries.filter_map(Result::ok) {
+        let source_path = entry.path();
+        if !source_path.is_file() {
+            continue;
         }
+
+        let Some(file_name) = source_path.file_name() else {
+            continue;
+        };
+        let target_path = target_dir.join(file_name);
+        copy_skill_file_if_missing(&source_path, &target_path)?;
     }
 
-    if let Ok(current_dir) = env::current_dir() {
-        push_candidate(current_dir.clone());
+    log_info(format!(
+        "Synchronized local skill store from bundled resources, source={}, target={}",
+        source_dir.display(),
+        target_dir.display()
+    ));
 
-        if let Some(parent) = current_dir.parent() {
-            push_candidate(parent.to_path_buf());
-        }
-    }
-
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    push_candidate(manifest_dir.clone());
-
-    if let Some(parent) = manifest_dir.parent() {
-        push_candidate(parent.to_path_buf());
-    }
-
-    if let Ok(executable_path) = env::current_exe() {
-        if let Some(executable_dir) = executable_path.parent() {
-            push_candidate(executable_dir.to_path_buf());
-
-            if let Some(parent) = executable_dir.parent() {
-                push_candidate(parent.to_path_buf());
-            }
-        }
-    }
-
-    candidates
+    Ok(())
 }
 
 fn load_skill_from_file(path: &Path) -> Option<SkillDefinition> {

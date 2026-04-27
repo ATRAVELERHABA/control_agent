@@ -6,6 +6,7 @@ control_agent/.venv/
 
 src-tauri/target/
 src-tauri/gen/
+src-tauri/bundled-resources/
 
 .env
 .env.local

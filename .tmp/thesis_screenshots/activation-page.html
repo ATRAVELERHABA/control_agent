@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>导入鉴权页面临时截图</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="screen-root">
+      <div class="app-window activation-window">
+        <div class="window-bar">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="bar-title">HZCUclaw Desktop · 许可证导入</span>
+        </div>
+
+        <div class="activation-head">
+          <div class="activation-head-row">
+            <div class="icon-box">⌁</div>
+            <div>
+              <h1>需要许可证</h1>
+              <p>
+                进入登录工作区前，请先导入带签名的许可证文件。系统会在本地执行 Ed25519
+                验签，并生成激活状态记录。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="activation-body">
+          <div class="alert alert-info">
+            未检测到有效许可证，当前系统停留在鉴权入口。导入成功后即可进入本地账号登录界面。
+          </div>
+
+          <div class="status-card">
+            <div class="status-item">
+              <div class="status-label">授权账号</div>
+              <div class="status-value">待导入许可证文件后显示</div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">许可证存储位置</div>
+              <div class="status-value">
+                C:\Users\86153\AppData\Roaming\HZCUclaw\activation
+              </div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">许可证 ID</div>
+              <div class="status-value">待生成</div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary">导入许可证文件</button>
+            <button class="btn">刷新状态</button>
+            <button class="btn btn-danger">清除许可证</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

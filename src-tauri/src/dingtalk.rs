@@ -26,7 +26,7 @@ use crate::{
     llm::{parse_tool_command, stream_chat_completion},
     logging::{log_error, log_info, log_warn, preview_text, timestamp_ms},
     models::{
-        AgentMode, ConversationMessageDto, DingTalkLogEntry, DingTalkStatus,
+        AgentMode, ConversationMessageDto, DingTalkLogEntry, DingTalkStatus, ReadWebPageRequest,
         RunCommandRequest as ShellCommandRequest, RunDuckDuckGoSearchRequest, SessionStatus,
         ToolCallDto,
     },
@@ -35,6 +35,8 @@ use crate::{
     skills::{
         load_skill_definitions, project_root_candidates, terminal_command_requires_confirmation,
     },
+    system_time::get_current_system_time,
+    webpage::read_webpage,
 };
 
 const MAX_EVENT_LOGS: usize = 80;
@@ -89,6 +91,13 @@ struct DuckDuckGoToolArguments {
     query: String,
     #[serde(default)]
     max_results: Option<u8>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReadWebPageToolArguments {
+    url: String,
+    #[serde(default)]
+    max_chars: Option<u32>,
 }
 
 static DINGTALK_RUNTIME: LazyLock<Mutex<Option<DingTalkRuntime>>> =
@@ -374,8 +383,9 @@ fn remote_chat_skills() -> Vec<crate::models::SkillDefinition> {
                 .as_ref()
                 .map(|tool| {
                     tool.name == TOOL_NAME
+                        || tool.name == "get_current_system_time"
                         || (enable_remote_search
-                            && tool.name == "duckduckgo_search"
+                            && (tool.name == "duckduckgo_search" || tool.name == "read_webpage")
                             && !tool.requires_confirmation)
                 })
                 .unwrap_or(false),
@@ -401,6 +411,23 @@ async fn execute_remote_tool(app: &AppHandle, tool_call: &ToolCallDto) -> Result
             })
             .await
         }
+        "read_webpage" => {
+            let payload: ReadWebPageToolArguments =
+                serde_json::from_str(&tool_call.function.arguments)
+                    .map_err(|error| format!("Invalid read_webpage arguments: {error}"))?;
+
+            let url = payload.url.trim().to_string();
+            if url.is_empty() {
+                return Err("read_webpage requires a non-empty url.".to_string());
+            }
+
+            read_webpage(ReadWebPageRequest {
+                url,
+                max_chars: payload.max_chars,
+            })
+            .await
+        }
+        "get_current_system_time" => Ok(get_current_system_time()),
         TOOL_NAME => {
             if terminal_command_requires_manual_approval() {
                 return Ok(remote_terminal_blocked_message());
